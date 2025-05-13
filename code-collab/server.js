@@ -38,9 +38,28 @@ io.on('connection', (socket) => {
         })
     })
 
+    // CODE EDITOR 
     socket.on(ACTIONS.CODE_CHANGE, ({ roomId, changes }) => {
         socket.to(roomId).emit(ACTIONS.CODE_CHANGE, { changes });
-      });
+    });
+
+    
+    socket.on(ACTIONS.CURSOR_CHANGE, ({ roomId, position, username, color }) => {
+        socket.to(roomId).emit(ACTIONS.CURSOR_CHANGE, {
+            position,
+            username,
+            color
+        });
+    });
+
+    socket.on(ACTIONS.SELECTION_CHANGE, ({ roomId, selection, username, color }) => {
+        socket.to(roomId).emit(ACTIONS.SELECTION_CHANGE, {
+            selection,
+            username,
+            color
+        });
+    });
+    //CODE EDITOR END
 
     socket.on('disconnecting', () => {
         console.log('socket disconnected', socket.id);
