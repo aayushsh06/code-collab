@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import { ACTIONS } from '../Actions';
+import { useLocation } from 'react-router-dom';
 import '../styles/CodeEditor.css';
 
 
@@ -22,8 +23,10 @@ const CodeEditor = ({ socketRef, roomId }) => {
   const cursorDecorations = useRef({});
   const selectionDecorations = useRef({});
   const userColor = useRef(getRandomColor());
+
+  const location = useLocation();
   
-  const username = location.state?.username;
+  const username = location.state?.username || `User-${Date.now().toString().slice(-4)}`;
 
   const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;
@@ -110,12 +113,14 @@ const CodeEditor = ({ socketRef, roomId }) => {
     const handleCursorChange = ({ position, username: remoteUsername, color }) => {
       if (!editorRef.current || !monacoRef.current || remoteUsername === username) return;
       
+      const validatedPosition = monacoRef.current.editor.validatedPosition(position);
+
       const cursorDecoration = {
         range: new monacoRef.current.Range(
-          position.lineNumber,
-          position.column,
-          position.lineNumber,
-          position.column
+          validatedPosition.lineNumber,
+          validatedPosition.column,
+          validatedPosition.lineNumber,
+          validatedPosition.column
         ),
         options: {
           className: 'remote-cursor',
