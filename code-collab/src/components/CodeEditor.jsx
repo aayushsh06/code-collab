@@ -15,9 +15,9 @@ const getRandomColor = () => {
   return colors[Math.floor(Math.random() * colors.length)];
 };
 
-const CodeEditor = ({ socketRef, roomId }) => {
+const CodeEditor = ({ socketRef, roomId, editorRef }) => {
   const [language, setLanguage] = useState('javascript');
-  const editorRef = useRef(null);
+  
   const monacoRef = useRef(null);
   const isRemoteUpdateRef = useRef(false);
   const cursorDecorations = useRef({});

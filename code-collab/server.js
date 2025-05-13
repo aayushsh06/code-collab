@@ -21,22 +21,30 @@ function getAllUsers(roomId) {
 io.on('connection', (socket) => {
     console.log('socket connected', socket.id);
 
+    // JOINING LOGIC
     socket.on(ACTIONS.JOIN, ({ roomId, username }) => {
         userSocketMap[socket.id] = username;
         socket.join(roomId);
-
+    
         const users = getAllUsers(roomId);
-
-        console.log(users)
-
+    
+        console.log(users);
+    
         users.forEach(({ socketId }) => {
             io.to(socketId).emit(ACTIONS.JOINED, {
                 users,
                 username,
                 socketId: socket.id,
-            })
-        })
-    })
+            });
+        });
+    });
+    
+    // SYNC_CODE
+    socket.on(ACTIONS.SYNC_CODE, ({ code, roomId }) => {
+        if (roomId) {
+            io.to(roomId).emit(ACTIONS.SYNC_CODE_RESPONSE, { code });
+        }
+    });
 
     // CODE EDITOR 
     socket.on(ACTIONS.CODE_CHANGE, ({ roomId, changes }) => {

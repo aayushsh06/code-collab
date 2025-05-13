@@ -6,5 +6,6 @@ export const ACTIONS = {
     SYNC_CODE: 'sync-code',
     LEAVE: 'leave',
     CURSOR_CHANGE: 'cursor-change',
-    SELECTION_CHANGE: 'selection-change'
+    SELECTION_CHANGE: 'selection-change',
+    SYNC_CODE_RESPONSE: 'sync-code-response'
   };
