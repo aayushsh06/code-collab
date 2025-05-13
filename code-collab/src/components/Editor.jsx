@@ -60,6 +60,14 @@ const [users, setUsers] = useState([])
         }
         setUsers(users);
       })
+
+      // DISCONNECT
+      socketRef.current.on(ACTIONS.DISCONNECTED, ({socketId, username}) => {
+        showNotificationWithTimeout(`${username} Left`);
+        setUsers((prev) => {
+          return prev.filter(user => user.socketId != socketId);
+        })
+      })
     }
     init();
   }, []);
