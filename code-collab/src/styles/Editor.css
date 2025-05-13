@@ -1,0 +1,126 @@
+:root {
+    --primary-color: #6c63ff;
+    --secondary-color: #5a52d9;
+    --text-color: #333;
+    --background-color: #f8f9fa;
+    --border-radius: 8px;
+    --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --transition: all 0.3s ease;
+  }
+  
+  body {
+    background-color: var(--background-color);
+    font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    overflow: hidden;
+  }
+  
+  .editor {
+    display: flex;
+  }
+
+  .info {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 20px;
+    background-color: white;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  }
+  
+  .users {
+    background-color: #f5f5ff;
+    border-radius: var(--border-radius);
+    padding: 15px 20px;
+    min-width: 200px;
+  }
+  
+  .users h1 {
+    font-size: 1.2rem;
+    color: var(--primary-color);
+    margin-top: 0;
+    margin-bottom: 15px;
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 8px;
+  }
+  
+  .users h2 {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-color);
+    margin: 8px 0;
+    display: flex;
+    align-items: center;
+  }
+  
+  .users h2::before {
+    content: "";
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background-color: #4CAF50;
+    border-radius: 50%;
+    margin-right: 8px;
+  }
+  
+  .actions {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .actions button {
+    padding: 10px 16px;
+    border: none;
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  
+  .copy-room {
+    background-color: white;
+    color: var(--primary-color);
+    border: 2px solid var(--primary-color) !important;
+  }
+  
+  .copy-room:hover {
+    background-color: #f0f0ff;
+  }
+  
+  .leave-room {
+    background-color: #ff5252;
+    color: white;
+  }
+  
+  .leave-room:hover {
+    background-color: #e04747;
+  }
+  
+  .code-editor {
+    height: calc(100vh - 80px);
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+  }
+  
+  /* Responsive design */
+  @media (max-width: 768px) {
+    .info {
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .users {
+      width: 100%;
+      min-width: unset;
+    }
+    
+    .actions {
+      width: 100%;
+      justify-content: space-between;
+    }
+  }

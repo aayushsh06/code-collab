@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom' 
 import CodeEditor from './CodeEditor'
 
+import '../styles/Editor.css'
+
 const Editor = () => {
   const navigate = useNavigate();
 
@@ -11,7 +13,7 @@ const Editor = () => {
   ])
 
   return (
-    <>
+    <div className='editor'>
       <div className='info'>
         <div className='users'>
           <h1>Active Users</h1>
@@ -28,7 +30,7 @@ const Editor = () => {
       <div className='code-editor'>
         <CodeEditor />
       </div>
-    </>
+    </div>
   )
 }
 
