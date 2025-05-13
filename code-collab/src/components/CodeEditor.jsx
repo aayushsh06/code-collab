@@ -4,7 +4,6 @@ import { ACTIONS } from '../Actions';
 import '../styles/CodeEditor.css';
 
 
-// Random color generator for cursor highlights
 const getRandomColor = () => {
   const colors = [
     '#FF5252', '#FF4081', '#E040FB', '#7C4DFF', 
@@ -24,7 +23,7 @@ const CodeEditor = ({ socketRef, roomId }) => {
   const selectionDecorations = useRef({});
   const userColor = useRef(getRandomColor());
   
-  const username = location.state?.username || `User-${Date.now().toString().slice(-4)}`;
+  const username = location.state?.username;
 
   const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;

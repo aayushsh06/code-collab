@@ -28,14 +28,24 @@ const Editor = () => {
     }, 1500);
 };
 
+
 const [users, setUsers] = useState([])
 
   const navigate = useNavigate();
   const location = useLocation();
   const { roomId } = useParams();
 
-  const socketRef = useRef(null);
+  const handleCopyRoomId = () => {
+    navigator.clipboard.writeText(roomId)
+    .then(() => {
+      showNotificationWithTimeout('Room ID Copied to Clipboard');
+    })
+    .catch((err) => {
+      showNotificationWithTimeout('Error Occurred, Try Again');
+    })
+  }
 
+  const socketRef = useRef(null);
   useEffect(() => {
     const init = async () => {
       socketRef.current = await initSocket();
@@ -89,7 +99,7 @@ const [users, setUsers] = useState([])
             ))}
         </div>
         <div className='actions'>
-          <button className='copy-room'> Copy Room Id</button>
+          <button className='copy-room' onClick={handleCopyRoomId}> Copy Room Id</button>
           <button className='leave-room' onClick={() => navigate('/code-collab')}>Leave Room</button>
         </div>
       </div>
