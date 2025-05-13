@@ -1,10 +1,36 @@
-import React, { useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
+import { ACTIONS } from '../Actions';
 import '../styles/CodeEditor.css';
 
-const CodeEditor = () => {
+const CodeEditor = ({socketRef, roomId}) => {
   const [language, setLanguage] = useState('javascript');
-  const [code, setCode] = useState('// Write your code here');
+  const editorRef = useRef(null);
+
+  const handleEditorDidMount = (editor, monaco) => {
+    editorRef.current = editor;
+    console.log('Mounted Code Editor');
+  
+    let isRemoteUpdate = false;
+  
+    editor.onDidChangeModelContent(() => {
+      if (isRemoteUpdate) return;
+  
+      const code = editor.getValue();
+      socketRef.current.emit(ACTIONS.CODE_CHANGE, {
+        roomId,
+        code,
+      });
+    });
+  
+    socketRef.current.on(ACTIONS.CODE_CHANGE, ({ code }) => {
+      if (code !== null) {
+        isRemoteUpdate = true;
+        editor.setValue(code);
+        isRemoteUpdate = false;
+      }
+    });
+  };
 
   return (
     <div className="code-editor-wrapper">
@@ -25,11 +51,11 @@ const CodeEditor = () => {
 
       <Editor
         height="100vh"
-        defaultLanguage={language}
         language={language}
-        value={code}
+        defaultLanguage={language}
+        defaultValue="// Write your code here"
         theme="vs-dark"
-        onChange={(value) => setCode(value)}
+        onMount={handleEditorDidMount}
         options={{
           fontSize: 14,
           minimap: { enabled: false },
@@ -39,5 +65,6 @@ const CodeEditor = () => {
     </div>
   );
 };
+
 
 export default CodeEditor;

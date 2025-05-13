@@ -70,6 +70,11 @@ const [users, setUsers] = useState([])
       })
     }
     init();
+    return () => {
+      socketRef.current.disconnect();
+      socketRef.current.off(ACTIONS.JOINED);
+      socketRef.current.off(ACTIONS.DISCONNECTED);
+    }
   }, []);
 
   return (
@@ -89,7 +94,7 @@ const [users, setUsers] = useState([])
         </div>
       </div>
       <div className='code-editor'>
-        <CodeEditor />
+        <CodeEditor socketRef={socketRef} roomId={roomId}/>
       </div>
     </div>
   )

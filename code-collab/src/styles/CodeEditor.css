@@ -1,34 +1,41 @@
 .code-editor-wrapper {
-    display: flex;
-    flex-direction: column;
-    height: 90vh;
-    border: 1px solid #333;
-    border-radius: 6px;
-    overflow: hidden;
-    background-color: #1e1e1e;
-  }
-  
-  .code-editor-header {
-    display: flex;
-    align-items: center;
-    padding: 10px;
-    background-color: #252526;
-    color: white;
-    font-family: sans-serif;
-    font-size: 14px;
-    gap: 10px;
-  }
-  
-  .code-editor-dropdown {
-    padding: 5px;
-    font-size: 14px;
-    background-color: #1e1e1e;
-    color: white;
-    border: 1px solid #444;
-    border-radius: 4px;
-  }
-  
-  .code-editor-container {
-    flex: 1;
-  }
-  
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #1e1e2f;
+  padding: 0;
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.code-editor-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background-color: #2d2d40;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #444;
+  color: #ffffff;
+}
+
+.code-editor-header label {
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.code-editor-dropdown {
+  padding: 0.4rem 0.6rem;
+  background-color: #3c3c55;
+  color: #ffffff;
+  border: none;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  outline: none;
+  transition: background-color 0.3s ease;
+}
+
+.code-editor-dropdown:hover,
+.code-editor-dropdown:focus {
+  background-color: #4d4d6f;
+  cursor: pointer;
+}

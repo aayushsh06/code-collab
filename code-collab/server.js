@@ -38,7 +38,12 @@ io.on('connection', (socket) => {
         })
     })
 
+    socket.on(ACTIONS.CODE_CHANGE, ({roomId, code}) => {
+        io.to(roomId).emit(ACTIONS.CODE_CHANGE, {code})
+    })
+
     socket.on('disconnecting', () => {
+        console.log('socket disconnected', socket.id);
         const rooms = [...socket.rooms];
         rooms.forEach((roomId) => {
             socket.in(roomId).emit(ACTIONS.DISCONNECTED, {
@@ -50,6 +55,7 @@ io.on('connection', (socket) => {
         socket.leave();
     })
 });
+
 
 const PORT = process.env.PORT || 5001;
 server.listen(PORT, () => console.log(`Listening on port ${PORT}`));
