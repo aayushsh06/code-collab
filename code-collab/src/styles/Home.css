@@ -5,50 +5,82 @@
   --dark-surface: #292841;
   --border-dark: #3c3c55;
   --text-light: #f8f9fa;
+  --text-muted: #9da9b9;
   --border-radius: 8px;
   --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   --transition: all 0.3s ease;
 }
 
-body {
-  font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
-  background-color: var(--dark-bg);
-  color: var(--text-light);
-  margin: 0;
-  padding: 0;
-  height: 100vh;
+.home-container {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  background-color: var(--dark-bg);
+  color: var(--text-light);
+  padding: 2rem 1rem;
 }
 
-h1 {
+.home-header {
   text-align: center;
-  color: var(--primary-color);
-  margin-top: 0;
   margin-bottom: 2rem;
+}
+
+.home-header h1 {
   font-size: 2.5rem;
-  font-weight: 700;
+  color: var(--primary-color);
+  margin: 0;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-.inputs {
-  display: flex;
-  flex-direction: column;
+.subtitle {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+}
+
+.portal-container {
   width: 100%;
-  max-width: 450px;
-  padding: 2rem;
+  max-width: 500px;
+  margin-bottom: auto;
+}
+
+.inputs {
   background-color: var(--dark-surface);
   border-radius: var(--border-radius);
+  padding: 2rem;
   box-shadow: var(--box-shadow);
   border: 1px solid var(--border-dark);
   position: relative;
 }
 
+.inputs::before {
+  content: "Room Portal";
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: var(--primary-color);
+  text-align: center;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid rgba(108, 99, 255, 0.2);
+}
+
+.input-group {
+  margin-bottom: 1.5rem;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--text-light);
+}
+
 .inputs input {
+  width: 100%;
   padding: 1rem;
-  margin-bottom: 1rem;
   border: 1px solid var(--border-dark);
   border-radius: var(--border-radius);
   font-size: 1rem;
@@ -67,59 +99,142 @@ h1 {
   color: rgba(255, 255, 255, 0.5);
 }
 
+.separator {
+  display: flex;
+  align-items: center;
+  margin: 2rem 0;
+  color: var(--text-muted);
+}
+
+.separator .line {
+  flex: 1;
+  height: 1px;
+  background-color: var(--border-dark);
+}
+
+.separator span {
+  padding: 0 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.action-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.or-text {
+  margin: 1rem 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.room-input-container {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.room-input-group {
+  margin-bottom: 1.5rem;
+}
+
+.copy-button {
+  padding: 0 1rem;
+  background-color: var(--dark-surface);
+  border: 1px solid var(--border-dark);
+  border-radius: var(--border-radius);
+  color: var(--primary-color);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.copy-button:hover {
+  background-color: rgba(108, 99, 255, 0.1);
+}
+
 .inputs button {
   padding: 1rem;
-  margin-bottom: 1rem;
   border: none;
   border-radius: var(--border-radius);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition);
+  width: 100%;
 }
 
 .travelButton {
-  background-color: transparent;
-  color: var(--primary-color);
-  border: 2px solid var(--primary-color) !important;
+  background-color: var(--primary-color);
+  color: white;
+  margin-bottom: 1.5rem;
 }
 
 .travelButton:hover {
-  background-color: rgba(108, 99, 255, 0.1);
-  transform: translateY(-2px);
-}
-
-.createButton {
-  background-color: var(--primary-color);
-  color: white;
-}
-
-.createButton:hover {
   background-color: var(--secondary-color);
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(108, 99, 255, 0.3);
 }
 
-.inputs::before {
-  content: "Room Portal";
-  display: block;
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 1.5rem;
+.createButton {
+  background-color: transparent;
   color: var(--primary-color);
-  text-align: center;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid rgba(108, 99, 255, 0.2);
+  border: 2px solid var(--primary-color) !important;
 }
 
-/* Responsive Design */
+.createButton:hover {
+  background-color: rgba(108, 99, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.info-box {
+  background-color: rgba(108, 99, 255, 0.1);
+  border: 1px solid var(--primary-color);
+  border-radius: var(--border-radius);
+  padding: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.info-icon {
+  font-size: 1.2rem;
+  line-height: 1.4;
+}
+
+.info-box p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-light);
+  line-height: 1.4;
+}
+
+.home-footer {
+  margin-top: 2rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* Responsive adjustments */
 @media (max-width: 600px) {
-  h1 {
+  .home-header h1 {
     font-size: 2rem;
+  }
+  
+  .subtitle {
+    font-size: 1rem;
   }
   
   .inputs {
     padding: 1.5rem;
-    width: 85%;
+  }
+  
+  .inputs::before {
+    font-size: 1.25rem;
   }
 }

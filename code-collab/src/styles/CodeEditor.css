@@ -40,20 +40,38 @@
   cursor: pointer;
 }
 
-/* Make the Monaco editor container take up remaining space */
+
 .monaco-editor-container {
   flex: 1;
   height: calc(100% - 64px) !important;
   width: 100% !important;
 }
 
-/* Ensure Monaco editor fills its container */
 .monaco-editor {
   height: 100% !important;
   width: 100% !important;
 }
 
-/* Refresh button */
+
+.monaco-editor .monaco-scrollable-element {
+  padding-top: 8px !important;
+}
+
+.monaco-editor .margin {
+  padding-left: 10px !important;
+  margin-right: 10px !important;
+}
+
+.monaco-editor .lines-content {
+  padding-left: 12px !important;
+}
+
+
+.monaco-editor .editor-scrollable-view {
+  padding-left: 8px;
+  padding-top: 8px;
+}
+
 .refresh-button {
   background-color: #4285f4;
   color: white;
@@ -74,7 +92,7 @@
   background-color: #2a56c6;
 }
 
-/* Cursor and Selection Styles */
+
 .remote-cursor {
   position: relative;
 }
@@ -113,7 +131,6 @@
   animation: cursor-fade-in 0.3s ease-in-out;
 }
 
-/* Monaco Editor Overrides */
 .monaco-editor .margin,
 .monaco-editor-background {
   background-color: #1e1e2f !important;
@@ -121,6 +138,18 @@
 
 .monaco-editor .line-numbers {
   color: #6c7293 !important;
+  font-size: 13px !important;
+  width: 50px !important;
+  padding-right: 16px !important;
+}
+
+.monaco-editor .line-numbers:first-child {
+  padding-top: 12px !important;
+}
+
+
+.monaco-editor .view-lines {
+  padding-left: 16px !important;
 }
 
 .monaco-editor .editor-scrollable {
