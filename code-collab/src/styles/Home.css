@@ -1,0 +1,97 @@
+/* Home.css */
+:root {
+    --primary-color: #6c63ff;
+    --secondary-color: #5a52d9;
+    --text-color: #333;
+    --background-color: #f8f9fa;
+    --border-radius: 8px;
+    --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --transition: all 0.3s ease;
+  }
+  
+  body {
+    font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 0;
+  }
+  
+  .inputs {
+    display: flex;
+    flex-direction: column;
+    max-width: 500px;
+    margin: 100px auto;
+    padding: 30px;
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+  }
+  
+  .inputs input {
+    padding: 14px;
+    margin-bottom: 16px;
+    border: 1px solid #e0e0e0;
+    border-radius: var(--border-radius);
+    font-size: 16px;
+    transition: var(--transition);
+  }
+  
+  .inputs input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(108, 99, 255, 0.2);
+  }
+  
+  .inputs input::placeholder {
+    color: #aaa;
+  }
+  
+  .inputs button {
+    padding: 14px;
+    margin-bottom: 12px;
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  
+  .travelButton {
+    background-color: white;
+    color: var(--primary-color);
+    border: 2px solid var(--primary-color) !important;
+  }
+  
+  .travelButton:hover {
+    background-color: #f0f0ff;
+  }
+  
+  .createButton {
+    background-color: var(--primary-color);
+    color: white;
+  }
+  
+  .createButton:hover {
+    background-color: var(--secondary-color);
+  }
+  
+  /* Add a simple title */
+  .inputs::before {
+    content: "Room Portal";
+    display: block;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 24px;
+    color: var(--primary-color);
+    text-align: center;
+  }
+  
+  /* Responsive styles */
+  @media (max-width: 600px) {
+    .inputs {
+      margin: 50px 20px;
+      padding: 20px;
+    }
+  }

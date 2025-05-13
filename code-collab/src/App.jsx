@@ -1,9 +1,8 @@
 import {BrowserRouter, Routes, Route} from 'react-router-dom'
-import Home from '/components/Home'
+import Home from './components/Home'
 import Editor from './components/Editor'
 
 function App() {
-  const [count, setCount] = useState(0)
 
   return (
     <BrowserRouter>
