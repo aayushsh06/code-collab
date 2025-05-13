@@ -1,16 +1,18 @@
-import {BrowserRouter, Routes, Route} from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Home from './components/Home'
 import Editor from './components/Editor'
 
 function App() {
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/code-collab" element={<Home/>} />
-        <Route path="/code-collab/editor/:roomId" element={<Editor/>} />
-      </Routes>
-    </BrowserRouter>
+    <>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/code-collab" element={<Home />} />
+          <Route path="/code-collab/editor/:roomId" element={<Editor />} />
+        </Routes>
+      </BrowserRouter>
+    </>
   )
 }
 
