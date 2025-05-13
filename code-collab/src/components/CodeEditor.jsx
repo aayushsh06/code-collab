@@ -17,6 +17,7 @@ const getRandomColor = () => {
 
 const CodeEditor = ({ socketRef, roomId, editorRef }) => {
   const [language, setLanguage] = useState('javascript');
+  const [codeVersion, setCodeVersion] = useState(0);
   
   const monacoRef = useRef(null);
   const isRemoteUpdateRef = useRef(false);
@@ -28,10 +29,36 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
   
   const username = location.state?.username || `User-${Date.now().toString().slice(-4)}`;
 
+  const clearAllDecorations = () => {
+    if (!editorRef.current) return;
+    
+    Object.keys(cursorDecorations.current).forEach(user => {
+      if (cursorDecorations.current[user]) {
+        editorRef.current.deltaDecorations(cursorDecorations.current[user], []);
+        delete cursorDecorations.current[user];
+      }
+    });
+    
+    Object.keys(selectionDecorations.current).forEach(user => {
+      if (selectionDecorations.current[user]) {
+        editorRef.current.deltaDecorations(selectionDecorations.current[user], []);
+        delete selectionDecorations.current[user];
+      }
+    });
+    
+    document.querySelectorAll('[id^="cursor-style-"]').forEach(el => el.remove());
+    document.querySelectorAll('[id^="selection-style-"]').forEach(el => el.remove());
+  };
+
   const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
-    console.log('Mounted Code Editor');
+
+    clearAllDecorations();
+
+    if (socketRef.current) {
+      socketRef.current.emit(ACTIONS.REQUEST_CODE, { roomId, clientVersion: codeVersion });
+    }
 
     editor.onDidChangeModelContent((event) => {
       if (isRemoteUpdateRef.current) {
@@ -40,7 +67,6 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
       }
 
       if (!socketRef.current) {
-        console.warn('Socket not initialized yet. Cannot emit code changes.');
         return;
       }
 
@@ -52,6 +78,13 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
       socketRef.current.emit(ACTIONS.CODE_CHANGE, {
         roomId,
         changes,
+      });
+
+      const currentCode = editor.getValue();
+      socketRef.current.emit(ACTIONS.SEND_CURRENT_CODE, {
+        roomId,
+        code: currentCode,
+        clientVersion: codeVersion
       });
     });
 
@@ -82,9 +115,91 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
 
   useEffect(() => {
     if (!socketRef.current) {
-      console.log('Waiting for socket initialization...');
       return;
     }
+
+    const handleUserDisconnected = ({ socketId, username }) => {
+      if (!editorRef.current || !username) return;
+      
+      if (cursorDecorations.current[username]) {
+        editorRef.current.deltaDecorations(cursorDecorations.current[username], []);
+        delete cursorDecorations.current[username];
+      }
+
+      if (selectionDecorations.current[username]) {
+        editorRef.current.deltaDecorations(selectionDecorations.current[username], []);
+        delete selectionDecorations.current[username];
+      }
+      
+      const cursorStyleId = `cursor-style-${username.replace(/\s+/g, '-')}`;
+      const selectionStyleId = `selection-style-${username.replace(/\s+/g, '-')}`;
+      
+      const cursorStyle = document.getElementById(cursorStyleId);
+      const selectionStyle = document.getElementById(selectionStyleId);
+      
+      if (cursorStyle) cursorStyle.remove();
+      if (selectionStyle) selectionStyle.remove();
+    };
+
+    socketRef.current.on(ACTIONS.DISCONNECTED, handleUserDisconnected);
+
+    const updateEditorContent = (code, version) => {
+      if (!editorRef.current || !code) return;
+      
+      try {
+        isRemoteUpdateRef.current = true;
+        
+        const model = editorRef.current.getModel();
+        if (!model) return;
+        
+        const fullRange = model.getFullModelRange();
+        
+        const currentValue = model.getValue();
+        if (currentValue !== code) {
+          editorRef.current.executeEdits('direct-update', [{
+            range: fullRange,
+            text: code,
+            forceMoveMarkers: true
+          }]);
+          
+          if (version > codeVersion) {
+            setCodeVersion(version);
+          }
+        }
+      } catch (error) {
+      } finally {
+        setTimeout(() => {
+          isRemoteUpdateRef.current = false;
+        }, 100);
+      }
+    };
+
+    socketRef.current.emit(ACTIONS.REQUEST_CODE, { roomId, clientVersion: codeVersion });
+    
+    socketRef.current.on(ACTIONS.SYNC_CODE_RESPONSE, ({ code, version, upToDate }) => {
+      if (upToDate) {
+        if (version > codeVersion) {
+          setCodeVersion(version);
+        }
+        return;
+      }
+      
+      if (code && typeof code === 'string' && (!version || version >= codeVersion)) {
+        updateEditorContent(code, version || 0);
+      }
+    });
+
+    const saveCodeBeforeUnload = () => {
+      if (editorRef.current && socketRef.current) {
+        const currentCode = editorRef.current.getValue();
+        socketRef.current.emit(ACTIONS.SEND_CURRENT_CODE, {
+          roomId,
+          code: currentCode
+        });
+      }
+    };
+    
+    window.addEventListener('beforeunload', saveCodeBeforeUnload);
 
     const handleCodeChange = ({ changes }) => {
       if (!editorRef.current || !monacoRef.current || !changes) return;
@@ -92,21 +207,42 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
       isRemoteUpdateRef.current = true;
 
       try {
-        const edits = changes.map((change) => ({
-          range: new monacoRef.current.Range(
-            change.range.startLineNumber,
-            change.range.startColumn,
-            change.range.endLineNumber,
-            change.range.endColumn
-          ),
-          text: change.text,
-          forceMoveMarkers: true,
-        }));
-
-        editorRef.current.executeEdits('remote', edits);
+        const model = editorRef.current.getModel();
+        if (!model) return;
+        
+        const lineCount = model.getLineCount();
+        
+        const edits = changes.map((change) => {
+          try {
+            const startLineNumber = Math.max(1, Math.min(change.range.startLineNumber, lineCount));
+            const startMaxColumn = model.getLineMaxColumn(startLineNumber);
+            const startColumn = Math.max(1, Math.min(change.range.startColumn, startMaxColumn));
+            
+            const endLineNumber = Math.max(1, Math.min(change.range.endLineNumber, lineCount));
+            const endMaxColumn = model.getLineMaxColumn(endLineNumber);
+            const endColumn = Math.max(1, Math.min(change.range.endColumn, endMaxColumn));
+            
+            return {
+              range: new monacoRef.current.Range(
+                startLineNumber,
+                startColumn,
+                endLineNumber,
+                endColumn
+              ),
+              text: change.text,
+              forceMoveMarkers: true,
+            };
+          } catch (err) {
+            return null;
+          }
+        }).filter(edit => edit !== null);
+        
+        if (edits.length > 0) {
+          editorRef.current.executeEdits('remote', edits);
+        }
       } catch (error) {
-        console.error('Error applying remote changes:', error);
-        isRemoteUpdateRef.current = false; 
+      } finally {
+        isRemoteUpdateRef.current = false;
       }
     };
 
@@ -116,73 +252,126 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
       const model = editorRef.current.getModel();
       if (!model) return;
     
-      const validatedPosition = model.validatePosition({
-        lineNumber: position.lineNumber,
-        column: Math.min(position.column, model.getLineMaxColumn(position.lineNumber)),
-      });
-    
-      const cursorDecoration = {
-        range: new monacoRef.current.Range(
-          validatedPosition.lineNumber,
-          validatedPosition.column,
-          validatedPosition.lineNumber,
-          validatedPosition.column
-        ),
-        options: {
-          className: 'remote-cursor',
-          hoverMessage: { value: remoteUsername },
-          before: {
-            content: '|',
-            inlineClassName: `remote-cursor-${remoteUsername.replace(/\s+/g, '-')}`
+      try {
+        const lineCount = model.getLineCount();
+        const lineNumber = Math.max(1, Math.min(position.lineNumber, lineCount));
+        
+        if (lineNumber <= lineCount) {
+          const maxColumn = model.getLineMaxColumn(lineNumber);
+          const column = Math.max(1, Math.min(position.column, maxColumn));
+          
+          const validatedPosition = {
+            lineNumber,
+            column
+          };
+          
+          const cursorDecoration = {
+            range: new monacoRef.current.Range(
+              validatedPosition.lineNumber,
+              validatedPosition.column,
+              validatedPosition.lineNumber,
+              validatedPosition.column
+            ),
+            options: {
+              className: 'remote-cursor',
+              hoverMessage: { value: remoteUsername },
+              before: {
+                content: '',
+                inlineClassName: `remote-cursor-${remoteUsername.replace(/\s+/g, '-')}`
+              },
+              afterContentClassName: `remote-cursor-${remoteUsername.replace(/\s+/g, '-')}-after`
+            }
+          };
+
+          addCursorStyle(remoteUsername, color);
+
+          if (cursorDecorations.current[remoteUsername]) {
+            editorRef.current.deltaDecorations(
+              cursorDecorations.current[remoteUsername],
+              [cursorDecoration]
+            );
+          } else {
+            cursorDecorations.current[remoteUsername] = editorRef.current.deltaDecorations(
+              [],
+              [cursorDecoration]
+            );
           }
         }
-      };
-
-      addCursorStyle(remoteUsername, color);
-
-      if (cursorDecorations.current[remoteUsername]) {
-        editorRef.current.deltaDecorations(
-          cursorDecorations.current[remoteUsername],
-          [cursorDecoration]
-        );
-      } else {
-        cursorDecorations.current[remoteUsername] = editorRef.current.deltaDecorations(
-          [],
-          [cursorDecoration]
-        );
+      } catch (error) {
       }
     };
 
     const handleSelectionChange = ({ selection, username: remoteUsername, color }) => {
       if (!editorRef.current || !monacoRef.current || remoteUsername === username) return;
       
-      const selectionDecoration = {
-        range: new monacoRef.current.Range(
-          selection.startLineNumber,
-          selection.startColumn,
-          selection.endLineNumber,
-          selection.endColumn
-        ),
-        options: {
-          className: `remote-selection-${remoteUsername.replace(/\s+/g, '-')}`,
-          hoverMessage: { value: `${remoteUsername}'s selection` },
+      const model = editorRef.current.getModel();
+      if (!model) return;
+      
+      try {
+        const lineCount = model.getLineCount();
+        
+        const startLineNumber = Math.max(1, Math.min(selection.startLineNumber, lineCount));
+        const startMaxColumn = model.getLineMaxColumn(startLineNumber);
+        const startColumn = Math.max(1, Math.min(selection.startColumn, startMaxColumn));
+        
+        const endLineNumber = Math.max(1, Math.min(selection.endLineNumber, lineCount));
+        const endMaxColumn = model.getLineMaxColumn(endLineNumber);
+        const endColumn = Math.max(1, Math.min(selection.endColumn, endMaxColumn));
+        
+        const selectionDecoration = {
+          range: new monacoRef.current.Range(
+            startLineNumber,
+            startColumn,
+            endLineNumber,
+            endColumn
+          ),
+          options: {
+            className: `remote-selection-${remoteUsername.replace(/\s+/g, '-')}`,
+            hoverMessage: { value: `${remoteUsername}'s selection` },
+          }
+        };
+
+        addSelectionStyle(remoteUsername, color);
+
+        if (selectionDecorations.current[remoteUsername]) {
+          editorRef.current.deltaDecorations(
+            selectionDecorations.current[remoteUsername],
+            [selectionDecoration]
+          );
+        } else {
+          selectionDecorations.current[remoteUsername] = editorRef.current.deltaDecorations(
+            [],
+            [selectionDecoration]
+          );
         }
-      };
-
-      addSelectionStyle(remoteUsername, color);
-
-      if (selectionDecorations.current[remoteUsername]) {
-        editorRef.current.deltaDecorations(
-          selectionDecorations.current[remoteUsername],
-          [selectionDecoration]
-        );
-      } else {
-        selectionDecorations.current[remoteUsername] = editorRef.current.deltaDecorations(
-          [],
-          [selectionDecoration]
-        );
+      } catch (error) {
       }
     };
+
+    const handleRequestCurrentCode = ({ roomId: requestRoomId }) => {
+      if (!editorRef.current || requestRoomId !== roomId) return;
+      
+      const currentCode = editorRef.current.getValue();
+      socketRef.current.emit(ACTIONS.SEND_CURRENT_CODE, {
+        roomId,
+        code: currentCode
+      });
+    };
+
+    const forceSaveCurrentCode = () => {
+      if (!editorRef.current || !socketRef.current) return;
+      
+      const currentCode = editorRef.current.getValue();
+      
+      socketRef.current.emit(ACTIONS.SEND_CURRENT_CODE, {
+        roomId,
+        code: currentCode,
+        force: true,
+        clientVersion: codeVersion
+      });
+    };
+    
+    const saveInterval = setInterval(forceSaveCurrentCode, 5000);
 
     const addCursorStyle = (remoteUsername, color) => {
       const styleId = `cursor-style-${remoteUsername.replace(/\s+/g, '-')}`;
@@ -196,15 +385,28 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
             width: 2px !important;
             position: absolute;
           }
-          .remote-cursor-content {
+          
+          .remote-cursor-${remoteUsername.replace(/\s+/g, '-')}::after {
+            content: "${remoteUsername}";
             position: absolute;
-            top: -1.3em;
-            left: -2px;
-            z-index: 100;
-            font-size: 0.8em;
-            padding: 2px 4px;
-            border-radius: 2px;
+            top: -20px;
+            left: 0;
+            background-color: ${color};
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
             white-space: nowrap;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(3px);
+            transition: opacity 0.2s, transform 0.2s;
+            pointer-events: none;
+          }
+          
+          .remote-cursor-${remoteUsername.replace(/\s+/g, '-')}:hover::after {
+            opacity: 1;
+            transform: translateY(0);
           }
         `;
         document.head.appendChild(style);
@@ -218,25 +420,48 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
         style.id = styleId;
         style.innerHTML = `
           .remote-selection-${remoteUsername.replace(/\s+/g, '-')} {
-            background-color: ${color}40; /* 40 = 25% opacity */
+            background-color: ${color}40;
             border: 1px solid ${color};
+            position: relative;
+          }
+          
+          .remote-selection-${remoteUsername.replace(/\s+/g, '-')}::before {
+            content: "${remoteUsername}";
+            position: absolute;
+            top: -20px;
+            right: 0;
+            background-color: ${color};
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 1000;
+            opacity: 0.8;
+            pointer-events: none;
           }
         `;
         document.head.appendChild(style);
       }
     };
 
-    console.log('Setting up CODE_CHANGE listener');
     socketRef.current.on(ACTIONS.CODE_CHANGE, handleCodeChange);
     socketRef.current.on(ACTIONS.CURSOR_CHANGE, handleCursorChange);
     socketRef.current.on(ACTIONS.SELECTION_CHANGE, handleSelectionChange);
+    socketRef.current.on(ACTIONS.REQUEST_CURRENT_CODE, handleRequestCurrentCode);
 
     return () => {
+      clearInterval(saveInterval);
+      window.removeEventListener('beforeunload', saveCodeBeforeUnload);
+      
+      // Clean up all decorations when component unmounts
+      clearAllDecorations();
+      
       if (socketRef.current) {
-        console.log('Removing listeners');
         socketRef.current.off(ACTIONS.CODE_CHANGE);
         socketRef.current.off(ACTIONS.CURSOR_CHANGE);
         socketRef.current.off(ACTIONS.SELECTION_CHANGE);
+        socketRef.current.off(ACTIONS.REQUEST_CURRENT_CODE);
+        socketRef.current.off(ACTIONS.DISCONNECTED);
       }
     };
   }, [socketRef.current, roomId, username]);
@@ -258,19 +483,22 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
         </select>
       </div>
       
-      <Editor
-        height="90vh"
-        language={language}
-        defaultLanguage={language}
-        defaultValue="// Write your code here"
-        theme="vs-dark"
-        onMount={handleEditorDidMount}
-        options={{
-          fontSize: 14,
-          minimap: { enabled: false },
-          wordWrap: 'on',
-        }}
-      />
+      <div className="monaco-editor-container">
+        <Editor
+          height="100%"
+          width="100%"
+          language={language}
+          defaultLanguage={language}
+          defaultValue="// Write your code here"
+          theme="vs-dark"
+          onMount={handleEditorDidMount}
+          options={{
+            fontSize: 14,
+            minimap: { enabled: false },
+            wordWrap: 'on',
+          }}
+        />
+      </div>
     </div>
   );
 };

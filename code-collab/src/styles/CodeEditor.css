@@ -1,11 +1,10 @@
 .code-editor-wrapper {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
+  width: 100%;
   background-color: #1e1e2f;
-  padding: 0;
-  margin: 0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
 }
 
 .code-editor-header {
@@ -14,8 +13,9 @@
   gap: 1rem;
   background-color: #2d2d40;
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid #444;
+  border-bottom: 1px solid #3c3c55;
   color: #ffffff;
+  margin-bottom: 16px;
 }
 
 .code-editor-header label {
@@ -40,9 +40,60 @@
   cursor: pointer;
 }
 
-/* Cursor Base Styles */
+/* Make the Monaco editor container take up remaining space */
+.monaco-editor-container {
+  flex: 1;
+  height: calc(100% - 64px) !important;
+  width: 100% !important;
+}
+
+/* Ensure Monaco editor fills its container */
+.monaco-editor {
+  height: 100% !important;
+  width: 100% !important;
+}
+
+/* Refresh button */
+.refresh-button {
+  background-color: #4285f4;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-left: auto;
+}
+
+.refresh-button:hover {
+  background-color: #3367d6;
+}
+
+.refresh-button:active {
+  background-color: #2a56c6;
+}
+
+/* Cursor and Selection Styles */
 .remote-cursor {
   position: relative;
+}
+
+.remote-cursor::before {
+  content: attr(data-username);
+  position: absolute;
+  top: -1.3em;
+  left: -2px;
+  font-size: 12px;
+  background-color: inherit;
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+  z-index: 100;
+  opacity: 0.9;
+  pointer-events: none;
+  transform: translateY(0);
+  transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
 .remote-cursor-content {
@@ -50,13 +101,28 @@
   font-weight: bold;
   color: white;
   opacity: 0.9;
+  transition: opacity 0.3s ease;
 }
 
 @keyframes cursor-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .remote-cursor-content::before {
   animation: cursor-fade-in 0.3s ease-in-out;
+}
+
+/* Monaco Editor Overrides */
+.monaco-editor .margin,
+.monaco-editor-background {
+  background-color: #1e1e2f !important;
+}
+
+.monaco-editor .line-numbers {
+  color: #6c7293 !important;
+}
+
+.monaco-editor .editor-scrollable {
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
 }

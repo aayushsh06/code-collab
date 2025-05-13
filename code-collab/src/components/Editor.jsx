@@ -8,11 +8,12 @@ import Notification from './Notification.jsx';
 import '../styles/Editor.css';
 
 const Editor = () => {
-  // Notification Handling
+
   const [showNotification, setShowNotification] = useState(false);
   const notificationTimeoutRef = useRef(null);
   const [message, setMessage] = useState('');
   const editorRef = useRef(null);
+  const [isConnected, setIsConnected] = useState(false);
 
   const showNotificationWithTimeout = (msg) => {
     setMessage(msg);
@@ -46,15 +47,25 @@ const Editor = () => {
 
   const socketRef = useRef(null);
 
+  const requestCodeFromServer = () => {
+    if (socketRef.current && roomId) {
+      socketRef.current.emit(ACTIONS.SYNC_CODE, { roomId });
+    }
+  };
+
   useEffect(() => {
     const init = async () => {
       socketRef.current = await initSocket();
 
       socketRef.current.on('connect_error', (err) => handleErrors(err));
       socketRef.current.on('connect_failed', (err) => handleErrors(err));
+      
+      socketRef.current.on('connect', () => {
+        setIsConnected(true);
+        requestCodeFromServer();
+      });
 
       function handleErrors(e) {
-        console.log('socket error', e);
         showNotificationWithTimeout('An Error Occurred');
       }
 
@@ -62,25 +73,23 @@ const Editor = () => {
         roomId,
         username: location.state?.username,
       });
+      setTimeout(() => {
+        if (socketRef.current) {
+          socketRef.current.emit(ACTIONS.REQUEST_CODE, { roomId });
+        }
+      }, 300);
 
       socketRef.current.on(ACTIONS.JOINED, ({ users, username, socketId }) => {
         if (username !== location.state?.username) {
           showNotificationWithTimeout(`${username} Joined`);
         }
         setUsers(users);
-
-        if (editorRef.current) {
-          const code = editorRef.current.getValue();
-          socketRef.current.emit(ACTIONS.SYNC_CODE, { code, roomId });
-        }
+        
+        setTimeout(() => {
+          requestCodeFromServer();
+        }, 500); 
       });
-      socketRef.current.on(ACTIONS.SYNC_CODE_RESPONSE, ({ code }) => {
-        if (editorRef.current && code !== undefined) {
-          editorRef.current.setValue(code); 
-        }
-      });
-
-      // DISCONNECT: Handle user leaving
+      
       socketRef.current.on(ACTIONS.DISCONNECTED, ({ socketId, username }) => {
         showNotificationWithTimeout(`${username} Left`);
         setUsers((prev) => {
@@ -90,12 +99,29 @@ const Editor = () => {
     };
 
     init();
+    
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && socketRef.current) {
+        requestCodeFromServer();
+      }
+    });
+    
     return () => {
-      socketRef.current.disconnect();
-      socketRef.current.off(ACTIONS.JOINED);
-      socketRef.current.off(ACTIONS.DISCONNECTED);
+      document.removeEventListener('visibilitychange', () => {});
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current.off(ACTIONS.JOINED);
+        socketRef.current.off(ACTIONS.DISCONNECTED);
+      }
     };
   }, []);
+
+  useEffect(() => {
+    window.addEventListener('focus', requestCodeFromServer);
+    return () => {
+      window.removeEventListener('focus', requestCodeFromServer);
+    };
+  }, [isConnected]);
 
   return (
     <div className="editor">

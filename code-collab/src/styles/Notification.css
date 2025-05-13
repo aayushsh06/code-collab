@@ -2,19 +2,44 @@
     position: fixed;       
     top: 20px;             
     right: 20px;           
-    padding: 15px;          
-    background-color: #444; 
+    padding: 15px 20px;     
+    background-color: #292841; 
     color: white;          
-    border-radius: 5px;     
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;     
+    border-left: 4px solid #6c63ff;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
     font-size: 16px;       
     z-index: 9999;          
     opacity: 1;             
-    transition: opacity 0.3s ease, top 0.3s ease; 
+    transition: all 0.3s ease;
+    max-width: 350px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .notification::before {
+    content: "🔔";
+    margin-right: 10px;
+    font-size: 18px;
   }
   
   .notification.hide {
     opacity: 0;         
-    top: 0;                
+    transform: translateY(-20px);
+  }
+  
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateX(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  .notification {
+    animation: slideIn 0.3s ease forwards;
   }
   

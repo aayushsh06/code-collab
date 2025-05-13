@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "react-router": "^7.6.0",
-    "react-router-dom": "^7.6.0"
+    "react-router-dom": "^7.6.0",
+    "redis": "^5.0.1"
   }
 }
