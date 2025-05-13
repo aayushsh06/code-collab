@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "monaco-editor": "^0.52.2",
-    "socket.io-client": "^4.8.1"
+    "react-router": "^7.6.0",
+    "react-router-dom": "^7.6.0"
   }
 }
