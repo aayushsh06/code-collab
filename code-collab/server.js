@@ -7,7 +7,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// LOOK AT OTHER APPLICATIONS
+// LOOK AT OTHER ALTERNATIVES WITH DB
 const userSocketMap = {};
 function getAllUsers(roomId) {
     return Array.from(io.sockets.adapter.rooms.get(roomId) || []).map((socketId) => {
@@ -28,6 +28,14 @@ io.on('connection', (socket) => {
         const users = getAllUsers(roomId);
 
         console.log(users)
+
+        users.forEach(({socketId}) => {
+            io.to(socketId).emit(ACTIONS.JOINED, {
+                users,
+                username,
+                socketId: socket.id,
+            })
+        })
     })
 });
 

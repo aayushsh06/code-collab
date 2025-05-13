@@ -2,12 +2,34 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useLocation, useParams } from 'react-router-dom'
 import CodeEditor from './CodeEditor'
 import { initSocket } from '../socket.js'
+import { ACTIONS } from '../Actions.js'
+import Notification from './Notification.jsx'
 
 import '../styles/Editor.css'
-import { ACTIONS } from '../Actions.js'
 
 
 const Editor = () => {
+  // Notification Handling
+  const [showNotification, setShowNotification] = useState(false);
+  const notificationTimeoutRef = useRef(null);
+  const [message, setMessage] = useState('');
+
+  const showNotificationWithTimeout = (msg) => {
+    setMessage(msg);
+    setShowNotification(true);
+
+    if (notificationTimeoutRef.current) {
+        clearTimeout(notificationTimeoutRef.current);
+    }
+
+    notificationTimeoutRef.current = setTimeout(() => {
+        setShowNotification(false);
+        notificationTimeoutRef.current = null; 
+    }, 1500);
+};
+
+const [users, setUsers] = useState([])
+
   const navigate = useNavigate();
   const location = useLocation();
   const { roomId } = useParams();
@@ -23,25 +45,28 @@ const Editor = () => {
 
       function handleErrors(e) {
         console.log('socket error', e);
-        
+        showNotification('An Error Occurred');
       }
 
       socketRef.current.emit(ACTIONS.JOIN, {
         roomId,
         username: location.state?.username,
       });
+
+      // JOINED
+      socketRef.current.on(ACTIONS.JOINED, ({users, username, socketId}) => {
+        if(username != location.state?.username) {
+          showNotificationWithTimeout(`${username} Joined`)
+        }
+        setUsers(users);
+      })
     }
     init();
-  }, [])
-
-  const [users, setUsers] = useState([
-    { socketId: 1, username: 'Aayush' },
-    { socketId: 2, username: 'John Pork' },
-    { socketId: 3, username: 'John Doe' },
-  ])
+  }, []);
 
   return (
     <div className='editor'>
+      {showNotification && <Notification message={message}/>}
       <div className='info'>
         <div className='users'>
           <h1>Active Users</h1>
