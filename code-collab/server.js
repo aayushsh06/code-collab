@@ -29,7 +29,7 @@ io.on('connection', (socket) => {
 
         console.log(users)
 
-        users.forEach(({socketId}) => {
+        users.forEach(({ socketId }) => {
             io.to(socketId).emit(ACTIONS.JOINED, {
                 users,
                 username,
@@ -38,16 +38,16 @@ io.on('connection', (socket) => {
         })
     })
 
-    socket.on(ACTIONS.CODE_CHANGE, ({roomId, code}) => {
-        io.to(roomId).emit(ACTIONS.CODE_CHANGE, {code})
-    })
+    socket.on(ACTIONS.CODE_CHANGE, ({ roomId, changes }) => {
+        socket.to(roomId).emit(ACTIONS.CODE_CHANGE, { changes });
+      });
 
     socket.on('disconnecting', () => {
         console.log('socket disconnected', socket.id);
         const rooms = [...socket.rooms];
         rooms.forEach((roomId) => {
             socket.in(roomId).emit(ACTIONS.DISCONNECTED, {
-                socketId : socket.id,
+                socketId: socket.id,
                 username: userSocketMap[socket.id],
             })
         })
