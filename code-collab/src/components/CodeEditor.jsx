@@ -112,9 +112,15 @@ const CodeEditor = ({ socketRef, roomId }) => {
 
     const handleCursorChange = ({ position, username: remoteUsername, color }) => {
       if (!editorRef.current || !monacoRef.current || remoteUsername === username) return;
-      
-      const validatedPosition = monacoRef.current.editor.validatedPosition(position);
 
+      const model = editorRef.current.getModel();
+      if (!model) return;
+    
+      const validatedPosition = model.validatePosition({
+        lineNumber: position.lineNumber,
+        column: Math.min(position.column, model.getLineMaxColumn(position.lineNumber)),
+      });
+    
       const cursorDecoration = {
         range: new monacoRef.current.Range(
           validatedPosition.lineNumber,
@@ -125,7 +131,6 @@ const CodeEditor = ({ socketRef, roomId }) => {
         options: {
           className: 'remote-cursor',
           hoverMessage: { value: remoteUsername },
-          beforeContentClassName: 'remote-cursor-content',
           before: {
             content: '|',
             inlineClassName: `remote-cursor-${remoteUsername.replace(/\s+/g, '-')}`
