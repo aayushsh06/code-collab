@@ -1,15 +1,3 @@
-
-@media (max-width: 600px) {
-  h1 {
-    font-size: 2rem;
-    margin-top: 40px;
-  }
-  
-  .inputs {
-    margin: 30px 20px;
-    padding: 20px;
-  }
-}
 :root {
   --primary-color: #6c63ff;
   --secondary-color: #5a52d9;
@@ -105,12 +93,4 @@ h1 {
   margin-bottom: 24px;
   color: var(--primary-color);
   text-align: center;
-}
-
-/* Responsive styles */
-@media (max-width: 600px) {
-  .inputs {
-    margin: 50px 20px;
-    padding: 20px;
-  }
 }

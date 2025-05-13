@@ -1,23 +1,4 @@
-:root {
-    --primary-color: #6c63ff;
-    --secondary-color: #5a52d9;
-    --text-color: #333;
-    --background-color: #f8f9fa;
-    --border-radius: 8px;
-    --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    --transition: all 0.3s ease;
-  }
-  
-  body {
-    background-color: var(--background-color);
-    font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
-    margin: 0;
-    padding: 0;
-    height: 100vh;
-    overflow: hidden;
-  }
-  
-  .editor {
+.editor {
     display: flex;
   }
 
@@ -100,27 +81,9 @@
   }
   
   .code-editor {
-    height: calc(100vh - 80px);
+    flex: 1;
     width: 100%;
     padding: 0;
     margin: 0;
-    overflow: hidden;
   }
   
-  /* Responsive design */
-  @media (max-width: 768px) {
-    .info {
-      flex-direction: column;
-      gap: 20px;
-    }
-    
-    .users {
-      width: 100%;
-      min-width: unset;
-    }
-    
-    .actions {
-      width: 100%;
-      justify-content: space-between;
-    }
-  }
