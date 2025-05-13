@@ -31,10 +31,8 @@ redisClient.on('error', (err) => console.log('Redis Client Error', err));
     }
 })();
 
-// Track room versions to prevent duplicate updates
 const roomVersions = {};
 
-// LOOK AT OTHER ALTERNATIVES WITH DB
 const userSocketMap = {};
 function getAllUsers(roomId) {
     return Array.from(io.sockets.adapter.rooms.get(roomId) || []).map((socketId) => {
@@ -57,10 +55,8 @@ io.on('connection', (socket) => {
     
         console.log(users);
     
-        // Fetch saved code from Redis
         const savedCode = await getCodeFromRedis(roomId);
         
-        // Emit to the joined user
         socket.emit(ACTIONS.SYNC_CODE_RESPONSE, { code: savedCode });
     
         users.forEach(({ socketId }) => {
@@ -92,15 +88,12 @@ io.on('connection', (socket) => {
     socket.on(ACTIONS.CODE_CHANGE, async ({ roomId, changes }) => {
         socket.to(roomId).emit(ACTIONS.CODE_CHANGE, { changes });
         
-        // Get the current code and save it to Redis when it changes
         const currentEditor = io.sockets.sockets.get(socket.id);
         if (currentEditor && roomId) {
-            // Instead of getting code directly, we'll request it from the client
             socket.emit(ACTIONS.REQUEST_CURRENT_CODE, { roomId });
         }
     });
     
-    // Handle the response with current code
     socket.on(ACTIONS.SEND_CURRENT_CODE, async ({ roomId, code, force = false, clientVersion }) => {
         if (roomId && code !== undefined) {
             if (force || (code && code.trim() !== '// Write your code here')) {
@@ -128,9 +121,14 @@ io.on('connection', (socket) => {
             color
         });
     });
+    
+    socket.on(ACTIONS.CURSOR_LEAVE, ({ roomId, username }) => {
+        socket.to(roomId).emit(ACTIONS.CURSOR_LEAVE, {
+            username
+        });
+    });
     //CODE EDITOR END
 
-    // Direct code request - specifically for handling page refresh
     socket.on(ACTIONS.REQUEST_CODE, async ({ roomId, clientVersion }) => {
         if (roomId) {
             try {
@@ -165,13 +163,11 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 5001;
 server.listen(PORT, () => console.log(`Listening on port ${PORT}`));
 
-// Clean up Redis connection on server shutdown
 process.on('SIGINT', async () => {
     await redisClient.quit();
     process.exit(0);
 });
 
-// Helper function to get code from Redis
 async function getCodeFromRedis(roomId) {
     try {
         const code = await redisClient.get(`room:${roomId}:code`);
@@ -185,7 +181,6 @@ async function getCodeFromRedis(roomId) {
     }
 }
 
-// Helper function to save code to Redis
 async function saveCodeToRedis(roomId, code) {
     try {
         const version = (roomVersions[roomId] || 0) + 1;
@@ -194,7 +189,6 @@ async function saveCodeToRedis(roomId, code) {
         await redisClient.set(`room:${roomId}:code`, code);
         await redisClient.set(`room:${roomId}:version`, version.toString());
         
-        // Set expiration time (e.g., 24 hours = 86400 seconds)
         await redisClient.expire(`room:${roomId}:code`, 86400);
         await redisClient.expire(`room:${roomId}:version`, 86400);
         

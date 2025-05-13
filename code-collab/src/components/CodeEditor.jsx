@@ -56,9 +56,35 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
 
     clearAllDecorations();
 
+    // Reset editor padding and layout
+    const editorDomNode = editor.getDomNode();
+    if (editorDomNode) {
+      const editorContainer = editorDomNode.closest('.monaco-editor');
+      if (editorContainer) {
+        editorContainer.style.padding = '0';
+      }
+    }
+    
+    setTimeout(() => {
+      editor.layout();
+      
+      editor.setPosition({ lineNumber: 1, column: 1 });
+      editor.focus();
+    }, 100);
+
     if (socketRef.current) {
       socketRef.current.emit(ACTIONS.REQUEST_CODE, { roomId, clientVersion: codeVersion });
     }
+
+    // When editor loses focus
+    editor.onDidBlurEditorWidget(() => {
+      if (socketRef.current) {
+        socketRef.current.emit(ACTIONS.CURSOR_LEAVE, {
+          roomId,
+          username
+        });
+      }
+    });
 
     editor.onDidChangeModelContent((event) => {
       if (isRemoteUpdateRef.current) {
@@ -117,6 +143,25 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
     if (!socketRef.current) {
       return;
     }
+
+
+    const handleClickOutside = (event) => {
+      if (editorRef.current) {
+        const editorDomNode = editorRef.current.getDomNode();
+        if (editorDomNode && !editorDomNode.contains(event.target)) {
+          // User clicked outside the editor
+          if (socketRef.current) {
+            socketRef.current.emit(ACTIONS.CURSOR_LEAVE, {
+              roomId,
+              username
+            });
+          }
+        }
+      }
+    };
+    
+
+    document.addEventListener('mousedown', handleClickOutside);
 
     const handleUserDisconnected = ({ socketId, username }) => {
       if (!editorRef.current || !username) return;
@@ -276,10 +321,10 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
               className: 'remote-cursor',
               hoverMessage: { value: remoteUsername },
               before: {
-                content: '',
+                content: '|',
                 inlineClassName: `remote-cursor-${remoteUsername.replace(/\s+/g, '-')}`
               },
-              afterContentClassName: `remote-cursor-${remoteUsername.replace(/\s+/g, '-')}-after`
+              stickiness: monacoRef.current.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
             }
           };
 
@@ -348,6 +393,22 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
       }
     };
 
+    const handleCursorLeave = ({ username: leavingUsername }) => {
+      if (!editorRef.current || !leavingUsername) return;
+      
+      // Remove cursor for this user
+      if (cursorDecorations.current[leavingUsername]) {
+        editorRef.current.deltaDecorations(cursorDecorations.current[leavingUsername], []);
+        delete cursorDecorations.current[leavingUsername];
+      }
+      
+      // Remove selection for this user
+      if (selectionDecorations.current[leavingUsername]) {
+        editorRef.current.deltaDecorations(selectionDecorations.current[leavingUsername], []);
+        delete selectionDecorations.current[leavingUsername];
+      }
+    };
+
     const handleRequestCurrentCode = ({ roomId: requestRoomId }) => {
       if (!editorRef.current || requestRoomId !== roomId) return;
       
@@ -384,6 +445,9 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
             color: white;
             width: 2px !important;
             position: absolute;
+            z-index: 10;
+            pointer-events: none;
+            opacity: 0.9 !important;
           }
           
           .remote-cursor-${remoteUsername.replace(/\s+/g, '-')}::after {
@@ -397,8 +461,8 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
             border-radius: 4px;
             font-size: 12px;
             white-space: nowrap;
-            z-index: 1000;
-            opacity: 0;
+            z-index: 10;
+            opacity: 0.95;
             transform: translateY(3px);
             transition: opacity 0.2s, transform 0.2s;
             pointer-events: none;
@@ -420,9 +484,11 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
         style.id = styleId;
         style.innerHTML = `
           .remote-selection-${remoteUsername.replace(/\s+/g, '-')} {
-            background-color: ${color}40;
-            border: 1px solid ${color};
+            background-color: ${color}70;
+            outline: 1px solid ${color};
             position: relative;
+            pointer-events: none;
+            z-index: 5;
           }
           
           .remote-selection-${remoteUsername.replace(/\s+/g, '-')}::before {
@@ -435,8 +501,8 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
             padding: 2px 6px;
             border-radius: 4px;
             font-size: 12px;
-            z-index: 1000;
-            opacity: 0.8;
+            z-index: 10;
+            opacity: 0.9;
             pointer-events: none;
           }
         `;
@@ -448,10 +514,14 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
     socketRef.current.on(ACTIONS.CURSOR_CHANGE, handleCursorChange);
     socketRef.current.on(ACTIONS.SELECTION_CHANGE, handleSelectionChange);
     socketRef.current.on(ACTIONS.REQUEST_CURRENT_CODE, handleRequestCurrentCode);
+    socketRef.current.on(ACTIONS.CURSOR_LEAVE, handleCursorLeave);
 
     return () => {
       clearInterval(saveInterval);
       window.removeEventListener('beforeunload', saveCodeBeforeUnload);
+      
+      // Remove click listener
+      document.removeEventListener('mousedown', handleClickOutside);
       
       // Clean up all decorations when component unmounts
       clearAllDecorations();
@@ -461,6 +531,7 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
         socketRef.current.off(ACTIONS.CURSOR_CHANGE);
         socketRef.current.off(ACTIONS.SELECTION_CHANGE);
         socketRef.current.off(ACTIONS.REQUEST_CURRENT_CODE);
+        socketRef.current.off(ACTIONS.CURSOR_LEAVE);
         socketRef.current.off(ACTIONS.DISCONNECTED);
       }
     };
@@ -492,10 +563,41 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
           defaultValue="// Write your code here"
           theme="vs-dark"
           onMount={handleEditorDidMount}
+          keepCurrentModel={true}
+          overrideServices={{
+            editorCursorStyle: 'line-thin',
+            editorCursorBlinking: 'solid',
+            editorCursorSmoothCaretAnimation: true,
+          }}
           options={{
             fontSize: 14,
             minimap: { enabled: false },
             wordWrap: 'on',
+            scrollBeyondLastLine: false,
+            smoothScrolling: true,
+            cursorBlinking: 'solid',
+            cursorSmoothCaretAnimation: 'on',
+            cursorStyle: 'line-thin',
+            cursorWidth: 2,
+            renderWhitespace: 'none',
+            renderLineHighlight: 'all',
+            lineNumbers: 'on',
+            lineNumbersMinChars: 3,
+            renderValidationDecorations: 'on',
+            fixedOverflowWidgets: true,
+            autoIndent: 'advanced',
+            useTabStops: true,
+            highlightActiveIndentGuide: true,
+            renderIndentGuides: true,
+            scrollbar: {
+              useShadows: false,
+              verticalHasArrows: false,
+              horizontalHasArrows: false,
+              vertical: 'visible',
+              horizontal: 'visible',
+              verticalScrollbarSize: 12,
+              horizontalScrollbarSize: 12,
+            }
           }}
         />
       </div>

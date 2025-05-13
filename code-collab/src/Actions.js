@@ -8,6 +8,7 @@ export const ACTIONS = {
     REQUEST_CODE: 'request-code',
     CURSOR_CHANGE: 'cursor-change',
     SELECTION_CHANGE: 'selection-change',
+    CURSOR_LEAVE: 'cursor-leave',
     REQUEST_CURRENT_CODE: 'request-current-code',
     SEND_CURRENT_CODE: 'send-current-code',
 };

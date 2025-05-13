@@ -45,6 +45,7 @@
   flex: 1;
   height: calc(100% - 64px) !important;
   width: 100% !important;
+  overflow: hidden;
 }
 
 .monaco-editor {
@@ -54,22 +55,22 @@
 
 
 .monaco-editor .monaco-scrollable-element {
-  padding-top: 8px !important;
+  padding-top: 0 !important;
 }
 
 .monaco-editor .margin {
-  padding-left: 10px !important;
-  margin-right: 10px !important;
+  padding-left: 0 !important;
+  margin-right: 0 !important;
 }
 
 .monaco-editor .lines-content {
-  padding-left: 12px !important;
+  padding-left: 0 !important;
 }
 
 
 .monaco-editor .editor-scrollable-view {
-  padding-left: 8px;
-  padding-top: 8px;
+  padding-left: 0;
+  padding-top: 0;
 }
 
 .refresh-button {
@@ -95,20 +96,23 @@
 
 .remote-cursor {
   position: relative;
+  pointer-events: none !important;
+  z-index: 5;
+  opacity: 1 !important;
 }
 
 .remote-cursor::before {
   content: attr(data-username);
   position: absolute;
-  top: -1.3em;
+  top: -1.5em;
   left: -2px;
-  font-size: 12px;
+  font-size: 11px;
   background-color: inherit;
-  padding: 2px 6px;
+  padding: 1px 6px;
   border-radius: 3px;
   white-space: nowrap;
-  z-index: 100;
-  opacity: 0.9;
+  z-index: 5;
+  opacity: 0.9 !important;
   pointer-events: none;
   transform: translateY(0);
   transition: transform 0.2s ease, opacity 0.2s ease;
@@ -118,8 +122,9 @@
   font-size: 10px;
   font-weight: bold;
   color: white;
-  opacity: 0.9;
+  opacity: 1 !important;
   transition: opacity 0.3s ease;
+  pointer-events: none !important;
 }
 
 @keyframes cursor-fade-in {
@@ -154,4 +159,61 @@
 
 .monaco-editor .editor-scrollable {
   box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.monaco-editor .cursor {
+  position: absolute !important;
+  z-index: 100 !important;
+  background-color: #fff !important;
+  border-left: 2px solid #fff !important;
+  opacity: 1 !important;
+}
+
+.monaco-editor .monaco-editor-background {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.monaco-editor .view-line {
+  left: 0 !important;
+}
+
+.monaco-editor .view-overlays {
+  left: 0 !important;
+}
+
+
+.monaco-editor .view-lines {
+  left: 0 !important;
+}
+
+.monaco-editor .lines-content {
+  left: 0 !important;
+}
+
+.monaco-editor .selected-text {
+  background-color: rgba(120, 120, 255, 0.5) !important;
+  opacity: 1 !important;
+}
+
+.monaco-editor .current-line {
+  border: none !important;
+  background-color: rgba(60, 60, 100, 0.4) !important;
+}
+
+.monaco-editor .highlight-range {
+  background-color: rgba(255, 255, 0, 0.2) !important;
+}
+
+/* Improve the selection appearance */
+.monaco-editor .monaco-editor-background .selected-text {
+  background-color: rgba(100, 100, 255, 0.5) !important;
+}
+
+/* Style the cursor more prominently */
+.monaco-editor .view-overlays .cursor {
+  border-left-width: 2px !important;
+  border-left-style: solid !important;
+  border-left-color: white !important;
+  background-color: white !important;
 }
