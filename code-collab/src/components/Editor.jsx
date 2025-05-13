@@ -1,15 +1,43 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom' 
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate, useLocation, useParams } from 'react-router-dom'
 import CodeEditor from './CodeEditor'
+import { initSocket } from '../socket.js'
 
 import '../styles/Editor.css'
+import { ACTIONS } from '../Actions.js'
+
 
 const Editor = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { roomId } = useParams();
+
+  const socketRef = useRef(null);
+
+  useEffect(() => {
+    const init = async () => {
+      socketRef.current = await initSocket();
+
+      socketRef.current.on('connect_error', (err) => handleErrors(err));
+      socketRef.current.on('connect_failed', (err) => handleErrors(err));
+
+      function handleErrors(e) {
+        console.log('socket error', e);
+        
+      }
+
+      socketRef.current.emit(ACTIONS.JOIN, {
+        roomId,
+        username: location.state?.username,
+      });
+    }
+    init();
+  }, [])
 
   const [users, setUsers] = useState([
-    {socketId: 1, username: 'Aayush'},
-    {socketId: 2, username: 'John Pork'}
+    { socketId: 1, username: 'Aayush' },
+    { socketId: 2, username: 'John Pork' },
+    { socketId: 3, username: 'John Doe' },
   ])
 
   return (
@@ -19,8 +47,8 @@ const Editor = () => {
           <h1>Active Users</h1>
           {
             users.map(client => (
-            <h2 key={client.socketId}>{client.username}</h2>
-          ))}
+              <h2 key={client.socketId}>{client.username}</h2>
+            ))}
         </div>
         <div className='actions'>
           <button className='copy-room'> Copy Room Id</button>

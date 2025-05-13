@@ -24,7 +24,7 @@ const CodeEditor = () => {
       </div>
 
       <Editor
-        height="500px"
+        height="100vh"
         defaultLanguage={language}
         language={language}
         value={code}
