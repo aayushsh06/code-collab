@@ -8,5 +8,9 @@ export const initSocket = async () => {
         transports: ['websocket'],
     };
 
-    return io('', options);
+    const URL = process.env.NODE_ENV === 'production' 
+        ? window.location.origin
+        : 'http://localhost:5001';
+
+    return io(URL, options);
 };

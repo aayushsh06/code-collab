@@ -618,6 +618,10 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
               horizontal: 'visible',
               verticalScrollbarSize: 12,
               horizontalScrollbarSize: 12,
+            },
+            padding: {
+              top: 20,
+              bottom: 10,
             }
           }}
         />
