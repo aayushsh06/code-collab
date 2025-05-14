@@ -326,7 +326,6 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
             column
           };
           
-          // Clear any previous decorations for this user first
           if (cursorDecorations.current[remoteUsername]) {
             editorRef.current.deltaDecorations(cursorDecorations.current[remoteUsername], []);
             delete cursorDecorations.current[remoteUsername];
@@ -340,17 +339,55 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
               validatedPosition.column
             ),
             options: {
-              className: 'remote-cursor',
+              className: 'cursor-container',
               hoverMessage: { value: remoteUsername },
               before: {
                 content: '|',
-                inlineClassName: `remote-cursor-${remoteUsername.replace(/\s+/g, '-')}`
+                inlineClassName: `user-cursor-${remoteUsername}`
               },
-              stickiness: monacoRef.current.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
+              after: {
+                content: ` ${remoteUsername}`,
+                inlineClassName: `user-cursor-label-${remoteUsername}`
+              }
             }
           };
-
-          addCursorStyle(remoteUsername, color);
+          
+          const styleId = `user-cursor-style-${remoteUsername}`;
+          let styleEl = document.getElementById(styleId);
+          
+          if (styleEl) {
+            styleEl.remove();
+          }
+          
+          styleEl = document.createElement('style');
+          styleEl.id = styleId;
+          styleEl.innerHTML = `
+            .user-cursor-${remoteUsername} {
+              background-color: ${color};
+              color: ${color};
+              width: 2px !important;
+              animation: user-cursor-blink-${remoteUsername} 1s infinite;
+            }
+            
+            .user-cursor-label-${remoteUsername} {
+              background-color: ${color};
+              color: white;
+              border-radius: 0 3px 3px 0;
+              padding: 0 4px;
+              font-size: 12px;
+            }
+            
+            @keyframes user-cursor-blink-${remoteUsername} {
+              0% { opacity: 1; }
+              40% { opacity: 1; }
+              45% { opacity: 0; }
+              55% { opacity: 0; }
+              60% { opacity: 1; }
+              100% { opacity: 1; }
+            }
+          `;
+          
+          document.head.appendChild(styleEl);
 
           cursorDecorations.current[remoteUsername] = editorRef.current.deltaDecorations(
             cursorDecorations.current[remoteUsername] || [],
@@ -358,6 +395,7 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
           );
         }
       } catch (error) {
+        console.error("Error handling cursor change:", error);
       }
     };
 
@@ -386,24 +424,58 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
             endColumn
           ),
           options: {
-            className: `remote-selection-${remoteUsername.replace(/\s+/g, '-')}`,
+            className: `user-selection-${remoteUsername}`,
             hoverMessage: { value: `${remoteUsername}'s selection` },
           }
         };
 
-        addSelectionStyle(remoteUsername, color);
+        const styleId = `user-selection-style-${remoteUsername}`;
+        let styleEl = document.getElementById(styleId);
+        
+        if (styleEl) {
+          styleEl.remove();
+        }
+        
+        styleEl = document.createElement('style');
+        styleEl.id = styleId;
+        styleEl.innerHTML = `
+          .user-selection-${remoteUsername} {
+            background-color: ${color}70;
+            outline: 1px solid ${color};
+            position: relative;
+          }
+          
+          .user-selection-${remoteUsername}::before {
+            content: "${remoteUsername}";
+            position: absolute;
+            top: -20px;
+            left: 100%;
+            background-color: ${color};
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 10;
+            animation: user-selection-blink-${remoteUsername} 2s infinite;
+          }
+          
+          @keyframes user-selection-blink-${remoteUsername} {
+            0% { opacity: 0.7; }
+            50% { opacity: 0.0; }
+            100% { opacity: 0.7; }
+          }
+        `;
+        
+        document.head.appendChild(styleEl);
 
         if (selectionDecorations.current[remoteUsername]) {
-          editorRef.current.deltaDecorations(
-            selectionDecorations.current[remoteUsername],
-            [selectionDecoration]
-          );
-        } else {
-          selectionDecorations.current[remoteUsername] = editorRef.current.deltaDecorations(
-            [],
-            [selectionDecoration]
-          );
+          editorRef.current.deltaDecorations(selectionDecorations.current[remoteUsername], []);
         }
+
+        selectionDecorations.current[remoteUsername] = editorRef.current.deltaDecorations(
+          selectionDecorations.current[remoteUsername] || [],
+          [selectionDecoration]
+        );
       } catch (error) {
       }
     };
@@ -442,84 +514,6 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
     };
     
     const saveInterval = setInterval(forceSaveCurrentCode, 5000);
-
-    const addCursorStyle = (remoteUsername, color) => {
-      const styleId = `cursor-style-${remoteUsername.replace(/\s+/g, '-')}`;
-      if (!document.getElementById(styleId)) {
-        const style = document.createElement('style');
-        style.id = styleId;
-        style.innerHTML = `
-          .remote-cursor-${remoteUsername.replace(/\s+/g, '-')} {
-            background-color: ${color};
-            color: white;
-            width: 2px !important;
-            position: absolute;
-            z-index: 100000;
-            pointer-events: none;
-            opacity: 0.9 !important;
-            display: inline-block;
-          }
-          
-          .remote-cursor-${remoteUsername.replace(/\s+/g, '-')}::after {
-            content: "${remoteUsername}";
-            position: absolute;
-            top: -20px;
-            right: 0;
-            left: auto;
-            background-color: ${color};
-            color: white;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 12px;
-            white-space: nowrap;
-            z-index: 100000;
-            opacity: 0.95;
-            transform: translateY(3px);
-            transition: opacity 0.2s, transform 0.2s;
-            pointer-events: none;
-          }
-          
-          .remote-cursor-${remoteUsername.replace(/\s+/g, '-')}:hover::after {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        `;
-        document.head.appendChild(style);
-      }
-    };
-
-    const addSelectionStyle = (remoteUsername, color) => {
-      const styleId = `selection-style-${remoteUsername.replace(/\s+/g, '-')}`;
-      if (!document.getElementById(styleId)) {
-        const style = document.createElement('style');
-        style.id = styleId;
-        style.innerHTML = `
-          .remote-selection-${remoteUsername.replace(/\s+/g, '-')} {
-            background-color: ${color}70;
-            outline: 1px solid ${color};
-            position: relative;
-            pointer-events: none;
-            z-index: 100000;
-          }
-          
-          .remote-selection-${remoteUsername.replace(/\s+/g, '-')}::before {
-            content: "${remoteUsername}";
-            position: absolute;
-            top: -20px;
-            right: 0;
-            background-color: ${color};
-            color: white;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 12px;
-            z-index: 100000;
-            opacity: 0.9;
-            pointer-events: none;
-          }
-        `;
-        document.head.appendChild(style);
-      }
-    };
 
     socketRef.current.on(ACTIONS.CODE_CHANGE, handleCodeChange);
     socketRef.current.on(ACTIONS.CURSOR_CHANGE, handleCursorChange);
@@ -596,7 +590,7 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
             wordWrap: 'on',
             scrollBeyondLastLine: false,
             smoothScrolling: true,
-            cursorBlinking: 'solid',
+            cursorBlinking: 'smooth',
             cursorSmoothCaretAnimation: 'on',
             cursorStyle: 'line-thin',
             cursorWidth: 2,

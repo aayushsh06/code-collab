@@ -209,9 +209,17 @@
 }
 
 .monaco-editor .view-overlays .cursor {
-  border-left-width: 2px !important;
+  border-left-width: 10px !important;
   border-left-style: solid !important;
   border-left-color: white !important;
   background-color: white !important;
+}
+
+/* Basic cursor blinking animation */
+@keyframes cursor-blink {
+  0% { opacity: 1; }
+  49% { opacity: 1; }
+  50% { opacity: 0; }
+  100% { opacity: 0; }
 }
 
