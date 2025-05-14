@@ -12,6 +12,8 @@ services:
       - "5001:5001"
     environment:
       - REDIS_URL=redis://redis:6379
-      - NODE_ENV=production
+      - NODE_ENV=development
+      - PORT=5001
+      - REDIS_TLS=false
     depends_on:
       - redis 

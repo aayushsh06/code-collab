@@ -8,8 +8,8 @@ function App() {
     <>
       <BrowserRouter>
         <Routes>
-          <Route path="/code-collab" element={<Home />} />
-          <Route path="/code-collab/editor/:roomId" element={<Editor />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/editor/:roomId" element={<Editor />} />
         </Routes>
       </BrowserRouter>
     </>

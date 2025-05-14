@@ -33,7 +33,7 @@ const Home = () => {
             return;
         }
     
-        navigate(`/code-collab/editor/${roomId}`, {
+        navigate(`/editor/${roomId}`, {
             state: { username }
         });
     };

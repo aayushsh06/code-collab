@@ -160,14 +160,12 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
       return;
     }
 
-    // Apply current user's cursor color
     addCurrentUserStyle();
 
     const handleClickOutside = (event) => {
       if (editorRef.current) {
         const editorDomNode = editorRef.current.getDomNode();
         if (editorDomNode && !editorDomNode.contains(event.target)) {
-          // User clicked outside the editor
           if (socketRef.current) {
             socketRef.current.emit(ACTIONS.CURSOR_LEAVE, {
               roomId,

@@ -22,9 +22,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Redis Client Setup
 const redisClient = createClient({
-    url: process.env.REDIS_URL || 'redis://localhost:6379',
+    url: process.env.REDIS_URL || 'redis://127.0.0.1:6379',
     socket: {
         reconnectStrategy: (retries) => {
             console.log(`Redis reconnection attempt ${retries}`);
@@ -37,7 +36,8 @@ const redisClient = createClient({
     } : {})
 });
 
-// Add more detailed error logging
+console.log('REDIS_URL', process.env.REDIS_URL);
+
 redisClient.on('error', (err) => {
     console.log('Redis Client Error', err);
     console.log('Redis connection details:', {
@@ -54,7 +54,6 @@ redisClient.on('reconnecting', () => {
     console.log('Redis client reconnecting');
 });
 
-// Connect to Redis with better error handling
 let redisConnected = false;
 (async () => {
     try {
@@ -228,7 +227,7 @@ process.on('SIGINT', async () => {
 async function getCodeFromRedis(roomId) {
     if (!redisConnected) {
         console.log('Redis not connected, returning default code');
-        return { code: '// Write your code here (Redis not connected)', version: 0 };
+        return { code: '// Write your code here', version: 0 };
     }
     
     try {
@@ -240,7 +239,7 @@ async function getCodeFromRedis(roomId) {
         return { code: code || '// Write your code here', version: parseInt(version, 10) };
     } catch (error) {
         console.log('Error getting code from Redis:', error);
-        return { code: '// Write your code here (Redis error)', version: 0 };
+        return { code: '// Write your code here', version: 0 };
     }
 }
 

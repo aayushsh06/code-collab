@@ -36,39 +36,33 @@ const Editor = () => {
   const { roomId } = useParams();
 
   const handleLeaveRoom = () => {
-    // Show a notification that we're leaving
     showNotificationWithTimeout("Leaving room...");
     
-    // Properly disconnect before navigating away
+
     if (socketRef.current) {
       try {
-        // First send the cursor leave event to remove cursor
         socketRef.current.emit(ACTIONS.CURSOR_LEAVE, {
           roomId,
           username: location.state?.username || 'Anonymous'
         });
         
-        // Emit a disconnected event manually before navigating away
         socketRef.current.emit(ACTIONS.DISCONNECTED, {
           socketId: socketRef.current.id,
           username: location.state?.username || 'Anonymous',
           roomId
         });
         
-        // Small delay to ensure the events are processed
         setTimeout(() => {
-          // Disconnect the socket
           socketRef.current.disconnect();
           
-          // Navigate back to home
-          navigate('/code-collab');
+          navigate('/');
         }, 300);
       } catch (error) {
-        // If anything goes wrong, still navigate away
-        navigate('/code-collab');
+
+        navigate('/');
       }
     } else {
-      navigate('/code-collab');
+      navigate('/');
     }
   };
 
