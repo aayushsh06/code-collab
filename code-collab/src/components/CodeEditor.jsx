@@ -55,8 +55,10 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
     monacoRef.current = monaco;
 
     clearAllDecorations();
+    
+    const cancelTokenSource = new monaco.CancellationTokenSource();
+    editorRef.current._cancelTokenSource = cancelTokenSource;
 
-    // Reset editor padding and layout
     const editorDomNode = editor.getDomNode();
     if (editorDomNode) {
       const editorContainer = editorDomNode.closest('.monaco-editor');
@@ -76,7 +78,6 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
       socketRef.current.emit(ACTIONS.REQUEST_CODE, { roomId, clientVersion: codeVersion });
     }
 
-    // When editor loses focus
     editor.onDidBlurEditorWidget(() => {
       if (socketRef.current) {
         socketRef.current.emit(ACTIONS.CURSOR_LEAVE, {
@@ -139,11 +140,28 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
     });
   };
 
+  const addCurrentUserStyle = () => {
+    const styleId = 'cursor-style-current-user';
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.innerHTML = `
+        .monaco-editor .cursor {
+          background-color: ${userColor.current} !important;
+          border-color: ${userColor.current} !important;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  };
+
   useEffect(() => {
     if (!socketRef.current) {
       return;
     }
 
+    // Apply current user's cursor color
+    addCurrentUserStyle();
 
     const handleClickOutside = (event) => {
       if (editorRef.current) {
@@ -396,17 +414,11 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
     const handleCursorLeave = ({ username: leavingUsername }) => {
       if (!editorRef.current || !leavingUsername) return;
       
-      // Remove cursor for this user
       if (cursorDecorations.current[leavingUsername]) {
         editorRef.current.deltaDecorations(cursorDecorations.current[leavingUsername], []);
         delete cursorDecorations.current[leavingUsername];
       }
       
-      // Remove selection for this user
-      if (selectionDecorations.current[leavingUsername]) {
-        editorRef.current.deltaDecorations(selectionDecorations.current[leavingUsername], []);
-        delete selectionDecorations.current[leavingUsername];
-      }
     };
 
     const handleRequestCurrentCode = ({ roomId: requestRoomId }) => {
@@ -445,7 +457,7 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
             color: white;
             width: 2px !important;
             position: absolute;
-            z-index: 10;
+            z-index: 100000;
             pointer-events: none;
             opacity: 0.9 !important;
           }
@@ -461,7 +473,7 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
             border-radius: 4px;
             font-size: 12px;
             white-space: nowrap;
-            z-index: 10;
+            z-index: 100000;
             opacity: 0.95;
             transform: translateY(3px);
             transition: opacity 0.2s, transform 0.2s;
@@ -488,7 +500,7 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
             outline: 1px solid ${color};
             position: relative;
             pointer-events: none;
-            z-index: 5;
+            z-index: 100000;
           }
           
           .remote-selection-${remoteUsername.replace(/\s+/g, '-')}::before {
@@ -501,7 +513,7 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
             padding: 2px 6px;
             border-radius: 4px;
             font-size: 12px;
-            z-index: 10;
+            z-index: 100000;
             opacity: 0.9;
             pointer-events: none;
           }
@@ -520,11 +532,21 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
       clearInterval(saveInterval);
       window.removeEventListener('beforeunload', saveCodeBeforeUnload);
       
-      // Remove click listener
       document.removeEventListener('mousedown', handleClickOutside);
       
-      // Clean up all decorations when component unmounts
       clearAllDecorations();
+      
+      if (editorRef.current && editorRef.current._cancelTokenSource) {
+        editorRef.current._cancelTokenSource.cancel();
+      }
+
+      if (editorRef.current && editorRef.current.dispose) {
+        try {
+          editorRef.current.dispose();
+        } catch (error) {
+          console.log('Error disposing editor:', error);
+        }
+      }
       
       if (socketRef.current) {
         socketRef.current.off(ACTIONS.CODE_CHANGE);
@@ -554,7 +576,7 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
         </select>
       </div>
       
-      <div className="monaco-editor-container">
+      <div className="monaco-editor-container" style={{ margin: '20px 0 0 20px' }}>
         <Editor
           height="100%"
           width="100%"

@@ -35,6 +35,43 @@ const Editor = () => {
   const location = useLocation();
   const { roomId } = useParams();
 
+  const handleLeaveRoom = () => {
+    // Show a notification that we're leaving
+    showNotificationWithTimeout("Leaving room...");
+    
+    // Properly disconnect before navigating away
+    if (socketRef.current) {
+      try {
+        // First send the cursor leave event to remove cursor
+        socketRef.current.emit(ACTIONS.CURSOR_LEAVE, {
+          roomId,
+          username: location.state?.username || 'Anonymous'
+        });
+        
+        // Emit a disconnected event manually before navigating away
+        socketRef.current.emit(ACTIONS.DISCONNECTED, {
+          socketId: socketRef.current.id,
+          username: location.state?.username || 'Anonymous',
+          roomId
+        });
+        
+        // Small delay to ensure the events are processed
+        setTimeout(() => {
+          // Disconnect the socket
+          socketRef.current.disconnect();
+          
+          // Navigate back to home
+          navigate('/code-collab');
+        }, 300);
+      } catch (error) {
+        // If anything goes wrong, still navigate away
+        navigate('/code-collab');
+      }
+    } else {
+      navigate('/code-collab');
+    }
+  };
+
   const handleCopyRoomId = () => {
     navigator.clipboard.writeText(roomId)
       .then(() => {
@@ -100,14 +137,16 @@ const Editor = () => {
 
     init();
     
-    document.addEventListener('visibilitychange', () => {
+    const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && socketRef.current) {
         requestCodeFromServer();
       }
-    });
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     
     return () => {
-      document.removeEventListener('visibilitychange', () => {});
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current.off(ACTIONS.JOINED);
@@ -135,7 +174,7 @@ const Editor = () => {
         </div>
         <div className="actions">
           <button className="copy-room" onClick={handleCopyRoomId}> Copy Room Id</button>
-          <button className="leave-room" onClick={() => navigate('/code-collab')}>Leave Room</button>
+          <button className="leave-room" onClick={handleLeaveRoom}>Leave Room</button>
         </div>
       </div>
       <div className="code-editor">

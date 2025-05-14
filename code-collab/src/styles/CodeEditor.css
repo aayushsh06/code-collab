@@ -45,7 +45,6 @@
   flex: 1;
   height: calc(100% - 64px) !important;
   width: 100% !important;
-  overflow: hidden;
 }
 
 .monaco-editor {
@@ -163,7 +162,7 @@
 
 .monaco-editor .cursor {
   position: absolute !important;
-  z-index: 100 !important;
+  z-index: 100000 !important;
   background-color: #fff !important;
   border-left: 2px solid #fff !important;
   opacity: 1 !important;
@@ -205,15 +204,14 @@
   background-color: rgba(255, 255, 0, 0.2) !important;
 }
 
-/* Improve the selection appearance */
 .monaco-editor .monaco-editor-background .selected-text {
   background-color: rgba(100, 100, 255, 0.5) !important;
 }
 
-/* Style the cursor more prominently */
 .monaco-editor .view-overlays .cursor {
   border-left-width: 2px !important;
   border-left-style: solid !important;
   border-left-color: white !important;
   background-color: white !important;
 }
+

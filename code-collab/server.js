@@ -127,6 +127,19 @@ io.on('connection', (socket) => {
             username
         });
     });
+    
+
+    socket.on(ACTIONS.DISCONNECTED, ({ socketId, username, roomId }) => {
+        if (roomId) {
+
+            socket.to(roomId).emit(ACTIONS.DISCONNECTED, {
+                socketId: socket.id,
+                username
+            });
+            
+            socket.leave(roomId);
+        }
+    });
     //CODE EDITOR END
 
     socket.on(ACTIONS.REQUEST_CODE, async ({ roomId, clientVersion }) => {
