@@ -8,9 +8,14 @@ RUN npm install
 
 COPY . .
 
+# Build the React app
 RUN npm run build
 
-EXPOSE 5001
-EXPOSE 3000
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=5001
 
-CMD ["npm", "start"] 
+EXPOSE 5001
+
+# Run the server which also serves the built static files
+CMD ["node", "server.js"] 
