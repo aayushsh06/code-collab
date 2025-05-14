@@ -250,18 +250,25 @@ async function saveCodeToRedis(roomId, code) {
     }
     
     try {
-        const version = (roomVersions[roomId] || 0) + 1;
-        roomVersions[roomId] = version;
+        const currentCode = await redisClient.get(`room:${roomId}:code`);
         
-        await redisClient.set(`room:${roomId}:code`, code);
-        await redisClient.set(`room:${roomId}:version`, version.toString());
-        
-        await redisClient.expire(`room:${roomId}:code`, 86400);
-        await redisClient.expire(`room:${roomId}:version`, 86400);
-        
-        const savedCode = await redisClient.get(`room:${roomId}:code`);
-        
-        return version;
+        if (currentCode !== code) {
+            const version = (roomVersions[roomId] || 0) + 1;
+            roomVersions[roomId] = version;
+            
+            await redisClient.set(`room:${roomId}:code`, code);
+            await redisClient.set(`room:${roomId}:version`, version.toString());
+            
+            await redisClient.expire(`room:${roomId}:code`, 86400);
+            await redisClient.expire(`room:${roomId}:version`, 86400);
+            
+            console.log(`Code updated for room ${roomId}, new version: ${version}`);
+            return version;
+        } else {
+            const version = roomVersions[roomId] || 0;
+            console.log(`No changes for room ${roomId}, keeping version: ${version}`);
+            return version;
+        }
     } catch (error) {
         console.log('Error saving code to Redis:', error);
         return false;
