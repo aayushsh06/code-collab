@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect x="0" y="0" width="64" height="64" rx="12" fill="#2D3748"/>
+  
+  <!-- Code brackets -->
+  <path d="M20 16L8 32L20 48" stroke="#38B2AC" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M44 16L56 32L44 48" stroke="#4299E1" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Connecting line representing collaboration -->
+  <path d="M26 20L38 44" stroke="#F6AD55" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Small circles representing collaborators -->
+  <circle cx="26" cy="20" r="6" fill="#F6AD55"/>
+  <circle cx="38" cy="44" r="6" fill="#F6AD55"/>
+</svg>

@@ -326,6 +326,12 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
             column
           };
           
+          // Clear any previous decorations for this user first
+          if (cursorDecorations.current[remoteUsername]) {
+            editorRef.current.deltaDecorations(cursorDecorations.current[remoteUsername], []);
+            delete cursorDecorations.current[remoteUsername];
+          }
+          
           const cursorDecoration = {
             range: new monacoRef.current.Range(
               validatedPosition.lineNumber,
@@ -346,17 +352,10 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
 
           addCursorStyle(remoteUsername, color);
 
-          if (cursorDecorations.current[remoteUsername]) {
-            editorRef.current.deltaDecorations(
-              cursorDecorations.current[remoteUsername],
-              [cursorDecoration]
-            );
-          } else {
-            cursorDecorations.current[remoteUsername] = editorRef.current.deltaDecorations(
-              [],
-              [cursorDecoration]
-            );
-          }
+          cursorDecorations.current[remoteUsername] = editorRef.current.deltaDecorations(
+            cursorDecorations.current[remoteUsername] || [],
+            [cursorDecoration]
+          );
         }
       } catch (error) {
       }
@@ -458,13 +457,15 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
             z-index: 100000;
             pointer-events: none;
             opacity: 0.9 !important;
+            display: inline-block;
           }
           
           .remote-cursor-${remoteUsername.replace(/\s+/g, '-')}::after {
             content: "${remoteUsername}";
             position: absolute;
             top: -20px;
-            left: 0;
+            right: 0;
+            left: auto;
             background-color: ${color};
             color: white;
             padding: 2px 6px;

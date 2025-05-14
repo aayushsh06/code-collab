@@ -262,11 +262,9 @@ async function saveCodeToRedis(roomId, code) {
             await redisClient.expire(`room:${roomId}:code`, 86400);
             await redisClient.expire(`room:${roomId}:version`, 86400);
             
-            console.log(`Code updated for room ${roomId}, new version: ${version}`);
             return version;
         } else {
             const version = roomVersions[roomId] || 0;
-            console.log(`No changes for room ${roomId}, keeping version: ${version}`);
             return version;
         }
     } catch (error) {
