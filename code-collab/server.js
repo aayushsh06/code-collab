@@ -27,21 +27,51 @@ const redisClient = createClient({
     url: process.env.REDIS_URL || 'redis://localhost:6379',
     socket: {
         reconnectStrategy: (retries) => {
-            return Math.min(retries * 50, 1000);
-        }
-    }
+            console.log(`Redis reconnection attempt ${retries}`);
+            return Math.min(retries * 1000, 10000);
+        },
+        connectTimeout: 10000, 
+    },
+    ...(process.env.REDIS_TLS === 'true' ? { 
+        socket: { tls: true, rejectUnauthorized: false } 
+    } : {})
 });
 
-redisClient.on('error', (err) => console.log('Redis Client Error', err));
+// Add more detailed error logging
+redisClient.on('error', (err) => {
+    console.log('Redis Client Error', err);
+    console.log('Redis connection details:', {
+        url: process.env.REDIS_URL ? 'Set from environment' : 'Using default',
+        tls: process.env.REDIS_TLS === 'true'
+    });
+});
 
-// Connect to Redis
+redisClient.on('connect', () => {
+    console.log('Redis client connected');
+});
+
+redisClient.on('reconnecting', () => {
+    console.log('Redis client reconnecting');
+});
+
+// Connect to Redis with better error handling
+let redisConnected = false;
 (async () => {
-    await redisClient.connect();
-    
     try {
-        await redisClient.set('test:connection', 'Connected');
-        await redisClient.get('test:connection');
+        await redisClient.connect();
+        redisConnected = true;
+        console.log('Successfully connected to Redis');
+        
+        try {
+            await redisClient.set('test:connection', 'Connected');
+            const testValue = await redisClient.get('test:connection');
+            console.log('Redis test value:', testValue);
+        } catch (error) {
+            console.log('Redis test operation failed:', error);
+        }
     } catch (error) {
+        console.log('Failed to connect to Redis:', error);
+        redisConnected = false;
     }
 })();
 
@@ -196,6 +226,11 @@ process.on('SIGINT', async () => {
 });
 
 async function getCodeFromRedis(roomId) {
+    if (!redisConnected) {
+        console.log('Redis not connected, returning default code');
+        return { code: '// Write your code here (Redis not connected)', version: 0 };
+    }
+    
     try {
         const code = await redisClient.get(`room:${roomId}:code`);
         const version = await redisClient.get(`room:${roomId}:version`) || '0';
@@ -204,11 +239,17 @@ async function getCodeFromRedis(roomId) {
         
         return { code: code || '// Write your code here', version: parseInt(version, 10) };
     } catch (error) {
-        return { code: '// Write your code here', version: 0 };
+        console.log('Error getting code from Redis:', error);
+        return { code: '// Write your code here (Redis error)', version: 0 };
     }
 }
 
 async function saveCodeToRedis(roomId, code) {
+    if (!redisConnected) {
+        console.log('Redis not connected, cannot save code');
+        return false;
+    }
+    
     try {
         const version = (roomVersions[roomId] || 0) + 1;
         roomVersions[roomId] = version;
@@ -223,6 +264,7 @@ async function saveCodeToRedis(roomId, code) {
         
         return version;
     } catch (error) {
+        console.log('Error saving code to Redis:', error);
         return false;
     }
 }
