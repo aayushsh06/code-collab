@@ -345,183 +345,110 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
       }
     };
 
-    const handleCursorChange = ({ position, username: remoteUsername, color }) => {
-      if (!editorRef.current || !monacoRef.current || remoteUsername === username) return;
+const handleCursorChange = ({ position, username: remoteUsername, color }) => {
+  if (!editorRef.current || !monacoRef.current || remoteUsername === username) return;
 
-      const model = editorRef.current.getModel();
-      if (!model) return;
-      try {
-        const lineCount = model.getLineCount();
-        const lineNumber = Math.max(1, Math.min(position.lineNumber, lineCount));
+  const model = editorRef.current.getModel();
+  if (!model) return;
 
-        if (lineNumber <= lineCount) {
-          const maxColumn = model.getLineMaxColumn(lineNumber);
-          const column = Math.max(1, Math.min(position.column, maxColumn));
+  try {
+    const lineCount = model.getLineCount();
+    const lineNumber = Math.max(1, Math.min(position.lineNumber, lineCount));
 
-          const validatedPosition = {
-            lineNumber,
-            column
-          };
+    if (lineNumber <= lineCount) {
+      const maxColumn = model.getLineMaxColumn(lineNumber);
+      const column = Math.max(1, Math.min(position.column, maxColumn));
+      const validatedPosition = { lineNumber, column };
 
-          if (cursorDecorations.current[remoteUsername]) {
-            editorRef.current.deltaDecorations(cursorDecorations.current[remoteUsername], []);
-            delete cursorDecorations.current[remoteUsername];
-          }
+      if (cursorDecorations.current[remoteUsername]) {
+        editorRef.current.deltaDecorations(cursorDecorations.current[remoteUsername], []);
+        delete cursorDecorations.current[remoteUsername];
+      }
 
-          if (validatedPosition.column === maxColumn) {
-            const cursorDecoration = {
-              range: new monacoRef.current.Range(
-                validatedPosition.lineNumber,
-                validatedPosition.column - 1,
-                validatedPosition.lineNumber,
-                validatedPosition.column
-              ),
-              options: {
-                className: 'cursor-container',
-                hoverMessage: { value: remoteUsername },
-                before: {
-                  content: ' ',
-                  inlineClassName: `user-cursor-${remoteUsername}`,
-                },
-              }
-            };
-            const styleId = `cursor-style-${remoteUsername}`;
-            let styleEl = document.getElementById(styleId);
+      const isEndOfLine = validatedPosition.column === maxColumn;
+      
+      const cursorRange = isEndOfLine
+        ? new monacoRef.current.Range(
+            validatedPosition.lineNumber,
+            validatedPosition.column - 1,
+            validatedPosition.lineNumber,
+            validatedPosition.column
+          )
+        : new monacoRef.current.Range(
+            validatedPosition.lineNumber,
+            validatedPosition.column,
+            validatedPosition.lineNumber,
+            validatedPosition.column + 1
+          );
 
-            if (styleEl) {
-              styleEl.remove();
-            }
-
-            styleEl = document.createElement('style');
-            styleEl.id = styleId;
-            styleEl.innerHTML = `
-            .user-cursor-${remoteUsername} {
-              background-color: ${color};
-              color: ${color};
-              width: 2px !important;
-              position: absolute;
-              z-index: 1000;
-              animation: user-cursor-blink-${remoteUsername} 1.5s infinite;
-              transform: translateX(8px);
-            }
-            
-            .user-cursor-${remoteUsername}::before {
-              content: "${remoteUsername}";
-              background-color: ${color};
-              color: white;
-              border-radius: 3px;
-              padding: 1px;
-              font-size: 12px;
-              position: absolute;
-              top: -20px;
-              left: 0;
-              white-space: nowrap;
-              z-index: 1000;
-              transform: translateX(30%);
-            }
-            
-            @keyframes user-cursor-blink-${remoteUsername} {
-              0% { opacity: 1; }
-              40% { opacity: 1; }
-              45% { opacity: 0; }
-              55% { opacity: 0; }
-              60% { opacity: 1; }
-              100% { opacity: 1; }
-            }
-          `;
-
-            document.head.appendChild(styleEl);
-
-            cursorDecorations.current[remoteUsername] = editorRef.current.deltaDecorations(
-              cursorDecorations.current[remoteUsername] || [],
-              [cursorDecoration]
-            );
-
-
-          }
-          else {
-
-
-            const cursorDecoration = {
-              range: new monacoRef.current.Range(
-                validatedPosition.lineNumber,
-                validatedPosition.column,
-                validatedPosition.lineNumber,
-                validatedPosition.column + 1
-              ),
-              options: {
-                className: 'cursor-container',
-                hoverMessage: { value: remoteUsername },
-                before: {
-                  content: ' ',
-                  inlineClassName: `user-cursor-${remoteUsername}`,
-                },
-                /*after: {
-                  content: ` ${remoteUsername}`,
-                  inlineClassName: `user-cursor-label-${remoteUsername}`
-                } */
-              }
-            };
-
-            const styleId = `cursor-style-${remoteUsername}`;
-            let styleEl = document.getElementById(styleId);
-
-            if (styleEl) {
-              styleEl.remove();
-            }
-
-            styleEl = document.createElement('style');
-            styleEl.id = styleId;
-            styleEl.innerHTML = `
-            .user-cursor-${remoteUsername} {
-              background-color: ${color};
-              color: ${color};
-              width: 2px !important;
-              position: absolute;
-              z-index: 1000;
-              animation: user-cursor-blink-${remoteUsername} 1s infinite;
-              transform: translateX(0px);
-            }
-            
-            .user-cursor-${remoteUsername}::before {
-              content: "${remoteUsername}";
-              background-color: ${color};
-              color: white;
-              border-radius: 3px;
-              padding: 1px;
-              font-size: 12px;
-              position: absolute;
-              top: -20px;
-              left: 0;
-              white-space: nowrap;
-              z-index: 1000;
-              transform: translateX(30%);
-            }
-            
-            @keyframes user-cursor-blink-${remoteUsername} {
-              0% { opacity: 1; }
-              40% { opacity: 1; }
-              45% { opacity: 0; }
-              55% { opacity: 0; }
-              60% { opacity: 1; }
-              100% { opacity: 1; }
-            }
-          `;
-
-
-            document.head.appendChild(styleEl);
-
-
-            cursorDecorations.current[remoteUsername] = editorRef.current.deltaDecorations(
-              cursorDecorations.current[remoteUsername] || [],
-              [cursorDecoration]
-            );
+      const cursorDecoration = {
+        range: cursorRange,
+        options: {
+          className: 'cursor-container',
+          hoverMessage: { value: remoteUsername },
+          before: {
+            content: ' ',
+            inlineClassName: `user-cursor-${remoteUsername}`,
           }
         }
-      } catch (error) {
-        console.error("Error handling cursor change:", error);
+      };
+
+      const styleId = `cursor-style-${remoteUsername}`;
+      let styleEl = document.getElementById(styleId);
+
+      if (styleEl) {
+        styleEl.remove();
       }
-    };
+
+      const transformValue = isEndOfLine ? 'translateX(8px)' : 'translateX(0px)';
+      
+      styleEl = document.createElement('style');
+      styleEl.id = styleId;
+      styleEl.innerHTML = `
+        .user-cursor-${remoteUsername} {
+          background-color: ${color};
+          color: ${color};
+          width: 2px !important;
+          position: absolute;
+          z-index: 1000;
+          animation: user-cursor-blink-${remoteUsername} 1s infinite;
+          transform: ${transformValue};
+        }
+        
+        .user-cursor-${remoteUsername}::before {
+          content: "${remoteUsername}";
+          background-color: ${color};
+          color: white;
+          border-radius: 3px;
+          padding: 1px;
+          font-size: 12px;
+          position: absolute;
+          top: -20px;
+          left: 0;
+          white-space: nowrap;
+          z-index: 1000;
+          transform: translateX(30%);
+        }
+        
+        @keyframes user-cursor-blink-${remoteUsername} {
+          0% { opacity: 1; }
+          50% { opacity: 0; }
+          100% { opacity: 1; }
+        }
+      `;
+
+      document.head.appendChild(styleEl);
+
+      // Apply decorations to the editor
+      cursorDecorations.current[remoteUsername] = editorRef.current.deltaDecorations(
+        cursorDecorations.current[remoteUsername] || [],
+        [cursorDecoration]
+      );
+    }
+  } catch (error) {
+    console.error("Error handling cursor change:", error);
+  }
+};
 
     const handleSelectionChange = ({ selection, username: remoteUsername, color }) => {
       if (!editorRef.current || !monacoRef.current || remoteUsername === username) return;
@@ -529,10 +456,7 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
       const model = editorRef.current.getModel();
       if (!model) return;
 
-      if (selection.startLineNumber === selection.endLineNumber && selection.startColumn === selection.endColumn) {
-        return;
-      }
-      console.log('Selection changed');
+ 
       try {
         const lineCount = model.getLineCount();
 
