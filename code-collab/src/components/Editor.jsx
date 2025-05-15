@@ -11,22 +11,23 @@ const Editor = () => {
 
   const [showNotification, setShowNotification] = useState(false);
   const notificationTimeoutRef = useRef(null);
-  const [message, setMessage] = useState('');
+  const[notificationMessage, setNotificationMessage] = useState('');
+  const timeOutRef = useRef(null);
+  const notificationDuration = 3000;
+
   const editorRef = useRef(null);
   const [isConnected, setIsConnected] = useState(false);
 
   const showNotificationWithTimeout = (msg) => {
-    setMessage(msg);
-    setShowNotification(true);
-
-    if (notificationTimeoutRef.current) {
-        clearTimeout(notificationTimeoutRef.current);
+    if (timeOutRef.current) {
+      clearTimeout(timeOutRef.current);
     }
-
-    notificationTimeoutRef.current = setTimeout(() => {
-        setShowNotification(false);
-        notificationTimeoutRef.current = null;
-    }, 1500);
+    setNotificationMessage(msg);
+    setShowNotification(true);
+    timeOutRef.current = setTimeout(() => {
+      setShowNotification(false);
+      timeOutRef.current = null;
+    }, notificationDuration);
   };
 
   const [users, setUsers] = useState([]);
@@ -158,7 +159,7 @@ const Editor = () => {
 
   return (
     <div className="editor">
-      {showNotification && <Notification message={message} />}
+      {showNotification && <Notification message={notificationMessage} />}
       <div className="info">
         <div className="users">
           <h1>Active Users</h1>

@@ -2,14 +2,15 @@ import React, { useRef, useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import { ACTIONS } from '../Actions';
 import { useLocation } from 'react-router-dom';
+import Notification from './Notification.jsx';
 import '../styles/CodeEditor.css';
 
 
 const getRandomColor = () => {
   const colors = [
-    '#FF5252', '#FF4081', '#E040FB', '#7C4DFF', 
-    '#536DFE', '#448AFF', '#40C4FF', '#18FFFF', 
-    '#64FFDA', '#69F0AE', '#B2FF59', '#EEFF41', 
+    '#FF5252', '#FF4081', '#E040FB', '#7C4DFF',
+    '#536DFE', '#448AFF', '#40C4FF', '#18FFFF',
+    '#64FFDA', '#69F0AE', '#B2FF59', '#EEFF41',
     '#FFD740', '#FFAB40', '#FF6E40'
   ];
   return colors[Math.floor(Math.random() * colors.length)];
@@ -18,7 +19,7 @@ const getRandomColor = () => {
 const CodeEditor = ({ socketRef, roomId, editorRef }) => {
   const [language, setLanguage] = useState('javascript');
   const [codeVersion, setCodeVersion] = useState(0);
-  
+
   const monacoRef = useRef(null);
   const isRemoteUpdateRef = useRef(false);
   const cursorDecorations = useRef({});
@@ -26,27 +27,45 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
   const userColor = useRef(getRandomColor());
   const isLanguageChangingRef = useRef(false);
 
+  const [showNotification, setShowNotification] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState('');
+  const timeOutRef = useRef(null);
+  const notificationDuration = 3000;
+
+  //Notification
+  const showNotificationWithTimeout = (message) => {
+    if (timeOutRef.current) {
+      clearTimeout(timeOutRef.current);
+    }
+    setNotificationMessage(message);
+    setShowNotification(true);
+    timeOutRef.current = setTimeout(() => {
+      setShowNotification(false);
+      timeOutRef.current = null;
+    }, notificationDuration);
+  };
+
   const location = useLocation();
-  
+
   const username = location.state?.username || `User-${Date.now().toString().slice(-4)}`;
 
   const clearAllDecorations = () => {
     if (!editorRef.current) return;
-    
+
     Object.keys(cursorDecorations.current).forEach(user => {
       if (cursorDecorations.current[user]) {
         editorRef.current.deltaDecorations(cursorDecorations.current[user], []);
         delete cursorDecorations.current[user];
       }
     });
-    
+
     Object.keys(selectionDecorations.current).forEach(user => {
       if (selectionDecorations.current[user]) {
         editorRef.current.deltaDecorations(selectionDecorations.current[user], []);
         delete selectionDecorations.current[user];
       }
     });
-    
+
     document.querySelectorAll('[id^="cursor-style-"]').forEach(el => el.remove());
     document.querySelectorAll('[id^="selection-style-"]').forEach(el => el.remove());
   };
@@ -56,7 +75,7 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
     monacoRef.current = monaco;
 
     clearAllDecorations();
-    
+
     const cancelTokenSource = new monaco.CancellationTokenSource();
     editorRef.current._cancelTokenSource = cancelTokenSource;
 
@@ -67,10 +86,10 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
         editorContainer.style.padding = '0';
       }
     }
-    
+
     setTimeout(() => {
       editor.layout();
-      
+
       editor.setPosition({ lineNumber: 1, column: 1 });
       editor.focus();
     }, 100);
@@ -102,7 +121,7 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
         range: change.range,
         text: change.text,
       }));
-      
+
       socketRef.current.emit(ACTIONS.CODE_CHANGE, {
         roomId,
         changes,
@@ -118,7 +137,7 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
 
     editor.onDidChangeCursorPosition((event) => {
       if (!socketRef.current) return;
-      
+
       const { position } = event;
       socketRef.current.emit(ACTIONS.CURSOR_CHANGE, {
         roomId,
@@ -130,7 +149,7 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
 
     editor.onDidChangeCursorSelection((event) => {
       if (!socketRef.current) return;
-      
+
       const { selection } = event;
       socketRef.current.emit(ACTIONS.SELECTION_CHANGE, {
         roomId,
@@ -161,9 +180,9 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
       isLanguageChangingRef.current = false;
       return;
     }
-    
+
     setLanguage(newLanguage);
-    
+
     if (socketRef.current) {
       socketRef.current.emit(ACTIONS.LANGUAGE_CHANGE, {
         roomId,
@@ -171,6 +190,7 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
         username
       });
     }
+
   };
 
   useEffect(() => {
@@ -193,13 +213,13 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
         }
       }
     };
-    
+
 
     document.addEventListener('mousedown', handleClickOutside);
 
     const handleUserDisconnected = ({ socketId, username }) => {
       if (!editorRef.current || !username) return;
-      
+
       if (cursorDecorations.current[username]) {
         editorRef.current.deltaDecorations(cursorDecorations.current[username], []);
         delete cursorDecorations.current[username];
@@ -209,13 +229,13 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
         editorRef.current.deltaDecorations(selectionDecorations.current[username], []);
         delete selectionDecorations.current[username];
       }
-      
+
       const cursorStyleId = `cursor-style-${username.replace(/\s+/g, '-')}`;
       const selectionStyleId = `selection-style-${username.replace(/\s+/g, '-')}`;
-      
+
       const cursorStyle = document.getElementById(cursorStyleId);
       const selectionStyle = document.getElementById(selectionStyleId);
-      
+
       if (cursorStyle) cursorStyle.remove();
       if (selectionStyle) selectionStyle.remove();
     };
@@ -224,15 +244,15 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
 
     const updateEditorContent = (code, version) => {
       if (!editorRef.current || !code) return;
-      
+
       try {
         isRemoteUpdateRef.current = true;
-        
+
         const model = editorRef.current.getModel();
         if (!model) return;
-        
+
         const fullRange = model.getFullModelRange();
-        
+
         const currentValue = model.getValue();
         if (currentValue !== code) {
           editorRef.current.executeEdits('direct-update', [{
@@ -240,7 +260,7 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
             text: code,
             forceMoveMarkers: true
           }]);
-          
+
           if (version > codeVersion) {
             setCodeVersion(version);
           }
@@ -254,7 +274,7 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
     };
 
     socketRef.current.emit(ACTIONS.REQUEST_CODE, { roomId, clientVersion: codeVersion });
-    
+
     socketRef.current.on(ACTIONS.SYNC_CODE_RESPONSE, ({ code, version, upToDate }) => {
       if (upToDate) {
         if (version > codeVersion) {
@@ -262,7 +282,7 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
         }
         return;
       }
-      
+
       if (code && typeof code === 'string' && (!version || version >= codeVersion)) {
         updateEditorContent(code, version || 0);
       }
@@ -277,30 +297,30 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
         });
       }
     };
-    
+
     window.addEventListener('beforeunload', saveCodeBeforeUnload);
 
     const handleCodeChange = ({ changes }) => {
       if (!editorRef.current || !monacoRef.current || !changes) return;
-      
+
       isRemoteUpdateRef.current = true;
 
       try {
         const model = editorRef.current.getModel();
         if (!model) return;
-        
+
         const lineCount = model.getLineCount();
-        
+
         const edits = changes.map((change) => {
           try {
             const startLineNumber = Math.max(1, Math.min(change.range.startLineNumber, lineCount));
             const startMaxColumn = model.getLineMaxColumn(startLineNumber);
             const startColumn = Math.max(1, Math.min(change.range.startColumn, startMaxColumn));
-            
+
             const endLineNumber = Math.max(1, Math.min(change.range.endLineNumber, lineCount));
             const endMaxColumn = model.getLineMaxColumn(endLineNumber);
             const endColumn = Math.max(1, Math.min(change.range.endColumn, endMaxColumn));
-            
+
             return {
               range: new monacoRef.current.Range(
                 startLineNumber,
@@ -315,7 +335,7 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
             return null;
           }
         }).filter(edit => edit !== null);
-        
+
         if (edits.length > 0) {
           editorRef.current.executeEdits('remote', edits);
         }
@@ -330,69 +350,74 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
 
       const model = editorRef.current.getModel();
       if (!model) return;
-    
       try {
         const lineCount = model.getLineCount();
         const lineNumber = Math.max(1, Math.min(position.lineNumber, lineCount));
-        
+
         if (lineNumber <= lineCount) {
           const maxColumn = model.getLineMaxColumn(lineNumber);
           const column = Math.max(1, Math.min(position.column, maxColumn));
-          
+
           const validatedPosition = {
             lineNumber,
             column
           };
-          
+
           if (cursorDecorations.current[remoteUsername]) {
             editorRef.current.deltaDecorations(cursorDecorations.current[remoteUsername], []);
             delete cursorDecorations.current[remoteUsername];
           }
-          
-          const cursorDecoration = {
-            range: new monacoRef.current.Range(
-              validatedPosition.lineNumber,
-              validatedPosition.column,
-              validatedPosition.lineNumber,
-              validatedPosition.column
-            ),
-            options: {
-              className: 'cursor-container',
-              hoverMessage: { value: remoteUsername },
-              before: {
-                content: '|',
-                inlineClassName: `user-cursor-${remoteUsername}`
-              },
-              after: {
-                content: ` ${remoteUsername}`,
-                inlineClassName: `user-cursor-label-${remoteUsername}`
+
+          if (validatedPosition.column === maxColumn) {
+            const cursorDecoration = {
+              range: new monacoRef.current.Range(
+                validatedPosition.lineNumber,
+                validatedPosition.column - 1,
+                validatedPosition.lineNumber,
+                validatedPosition.column
+              ),
+              options: {
+                className: 'cursor-container',
+                hoverMessage: { value: remoteUsername },
+                before: {
+                  content: ' ',
+                  inlineClassName: `user-cursor-${remoteUsername}`,
+                },
               }
+            };
+            const styleId = `cursor-style-${remoteUsername}`;
+            let styleEl = document.getElementById(styleId);
+
+            if (styleEl) {
+              styleEl.remove();
             }
-          };
-          
-          const styleId = `cursor-style-${remoteUsername}`;
-          let styleEl = document.getElementById(styleId);
-          
-          if (styleEl) {
-            styleEl.remove();
-          }
-          
-          styleEl = document.createElement('style');
-          styleEl.id = styleId;
-          styleEl.innerHTML = `
+
+            styleEl = document.createElement('style');
+            styleEl.id = styleId;
+            styleEl.innerHTML = `
             .user-cursor-${remoteUsername} {
               background-color: ${color};
               color: ${color};
               width: 2px !important;
-              animation: user-cursor-blink-${remoteUsername} 1s infinite;
+              position: absolute;
+              z-index: 1000;
+              animation: user-cursor-blink-${remoteUsername} 1.5s infinite;
+              transform: translateX(8px);
             }
             
-            .user-cursor-label-${remoteUsername} {
+            .user-cursor-${remoteUsername}::before {
+              content: "${remoteUsername}";
               background-color: ${color};
               color: white;
-              border-radius: 0 3px 3px 0;
-              padding: 0 4px;
+              border-radius: 3px;
+              padding: 1px;
               font-size: 12px;
+              position: absolute;
+              top: -20px;
+              left: 0;
+              white-space: nowrap;
+              z-index: 1000;
+              transform: translateX(30%);
             }
             
             @keyframes user-cursor-blink-${remoteUsername} {
@@ -404,13 +429,94 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
               100% { opacity: 1; }
             }
           `;
-          
-          document.head.appendChild(styleEl); 
 
-          cursorDecorations.current[remoteUsername] = editorRef.current.deltaDecorations(
-            cursorDecorations.current[remoteUsername] || [],
-            [cursorDecoration]
-          );
+            document.head.appendChild(styleEl);
+
+            cursorDecorations.current[remoteUsername] = editorRef.current.deltaDecorations(
+              cursorDecorations.current[remoteUsername] || [],
+              [cursorDecoration]
+            );
+
+
+          }
+          else {
+
+
+            const cursorDecoration = {
+              range: new monacoRef.current.Range(
+                validatedPosition.lineNumber,
+                validatedPosition.column,
+                validatedPosition.lineNumber,
+                validatedPosition.column + 1
+              ),
+              options: {
+                className: 'cursor-container',
+                hoverMessage: { value: remoteUsername },
+                before: {
+                  content: ' ',
+                  inlineClassName: `user-cursor-${remoteUsername}`,
+                },
+                /*after: {
+                  content: ` ${remoteUsername}`,
+                  inlineClassName: `user-cursor-label-${remoteUsername}`
+                } */
+              }
+            };
+
+            const styleId = `cursor-style-${remoteUsername}`;
+            let styleEl = document.getElementById(styleId);
+
+            if (styleEl) {
+              styleEl.remove();
+            }
+
+            styleEl = document.createElement('style');
+            styleEl.id = styleId;
+            styleEl.innerHTML = `
+            .user-cursor-${remoteUsername} {
+              background-color: ${color};
+              color: ${color};
+              width: 2px !important;
+              position: absolute;
+              z-index: 1000;
+              animation: user-cursor-blink-${remoteUsername} 1s infinite;
+              transform: translateX(0px);
+            }
+            
+            .user-cursor-${remoteUsername}::before {
+              content: "${remoteUsername}";
+              background-color: ${color};
+              color: white;
+              border-radius: 3px;
+              padding: 1px;
+              font-size: 12px;
+              position: absolute;
+              top: -20px;
+              left: 0;
+              white-space: nowrap;
+              z-index: 1000;
+              transform: translateX(30%);
+            }
+            
+            @keyframes user-cursor-blink-${remoteUsername} {
+              0% { opacity: 1; }
+              40% { opacity: 1; }
+              45% { opacity: 0; }
+              55% { opacity: 0; }
+              60% { opacity: 1; }
+              100% { opacity: 1; }
+            }
+          `;
+
+
+            document.head.appendChild(styleEl);
+
+
+            cursorDecorations.current[remoteUsername] = editorRef.current.deltaDecorations(
+              cursorDecorations.current[remoteUsername] || [],
+              [cursorDecoration]
+            );
+          }
         }
       } catch (error) {
         console.error("Error handling cursor change:", error);
@@ -419,21 +525,25 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
 
     const handleSelectionChange = ({ selection, username: remoteUsername, color }) => {
       if (!editorRef.current || !monacoRef.current || remoteUsername === username) return;
-      
+
       const model = editorRef.current.getModel();
       if (!model) return;
-      
+
+      if (selection.startLineNumber === selection.endLineNumber && selection.startColumn === selection.endColumn) {
+        return;
+      }
+      console.log('Selection changed');
       try {
         const lineCount = model.getLineCount();
-        
+
         const startLineNumber = Math.max(1, Math.min(selection.startLineNumber, lineCount));
         const startMaxColumn = model.getLineMaxColumn(startLineNumber);
         const startColumn = Math.max(1, Math.min(selection.startColumn, startMaxColumn));
-        
+
         const endLineNumber = Math.max(1, Math.min(selection.endLineNumber, lineCount));
         const endMaxColumn = model.getLineMaxColumn(endLineNumber);
         const endColumn = Math.max(1, Math.min(selection.endColumn, endMaxColumn));
-        
+
         const selectionDecoration = {
           range: new monacoRef.current.Range(
             startLineNumber,
@@ -449,11 +559,11 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
 
         const styleId = `user-selection-style-${remoteUsername}`;
         let styleEl = document.getElementById(styleId);
-        
+
         if (styleEl) {
           styleEl.remove();
         }
-        
+
         styleEl = document.createElement('style');
         styleEl.id = styleId;
         styleEl.innerHTML = `
@@ -483,7 +593,8 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
             100% { opacity: 0.7; }
           }
         `;
-        
+
+
         document.head.appendChild(styleEl);
 
         if (selectionDecorations.current[remoteUsername]) {
@@ -500,17 +611,17 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
 
     const handleCursorLeave = ({ username: leavingUsername }) => {
       if (!editorRef.current || !leavingUsername) return;
-      
+
       if (cursorDecorations.current[leavingUsername]) {
         editorRef.current.deltaDecorations(cursorDecorations.current[leavingUsername], []);
         delete cursorDecorations.current[leavingUsername];
       }
-      
+
     };
 
     const handleRequestCurrentCode = ({ roomId: requestRoomId }) => {
       if (!editorRef.current || requestRoomId !== roomId) return;
-      
+
       const currentCode = editorRef.current.getValue();
       socketRef.current.emit(ACTIONS.SEND_CURRENT_CODE, {
         roomId,
@@ -520,9 +631,9 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
 
     const forceSaveCurrentCode = () => {
       if (!editorRef.current || !socketRef.current) return;
-      
+
       const currentCode = editorRef.current.getValue();
-      
+
       socketRef.current.emit(ACTIONS.SEND_CURRENT_CODE, {
         roomId,
         code: currentCode,
@@ -530,14 +641,22 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
         clientVersion: codeVersion
       });
     };
-    
+
     const saveInterval = setInterval(forceSaveCurrentCode, 5000);
+
+    const languageMap = {
+      javascript: 'JavaScript',
+      python: 'Python',
+      java: 'Java',
+      cpp: 'C++'
+    };
 
     const handleLanguageUpdate = ({ language: newLanguage, username: remoteUsername }) => {
       if (remoteUsername !== username) {
         isLanguageChangingRef.current = true;
         setLanguage(newLanguage);
       }
+      showNotificationWithTimeout(`${remoteUsername} changed language to ${languageMap[newLanguage]}`);
     };
 
     socketRef.current.on(ACTIONS.CODE_CHANGE, handleCodeChange);
@@ -550,11 +669,11 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
     return () => {
       clearInterval(saveInterval);
       window.removeEventListener('beforeunload', saveCodeBeforeUnload);
-      
+
       document.removeEventListener('mousedown', handleClickOutside);
-      
+
       clearAllDecorations();
-      
+
       if (editorRef.current && editorRef.current._cancelTokenSource) {
         editorRef.current._cancelTokenSource.cancel();
       }
@@ -566,7 +685,7 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
           console.log('Error disposing editor:', error);
         }
       }
-      
+
       if (socketRef.current) {
         socketRef.current.off(ACTIONS.CODE_CHANGE);
         socketRef.current.off(ACTIONS.CURSOR_CHANGE);
@@ -580,74 +699,79 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
   }, [socketRef.current, roomId, username]);
 
   return (
-    <div className="code-editor-wrapper">
-      <div className="code-editor-header">
-        <label htmlFor="language">Language:</label>
-        <select
-          id="language"
-          className="code-editor-dropdown"
-          value={language}
-          onChange={(e) => handleLanguageChange(e.target.value)}
-        >
-          <option value="javascript">JavaScript</option>
-          <option value="python">Python</option>
-          <option value="java">Java</option>
-          <option value="cpp">C++</option>
-        </select>
+    <>
+      <div className="notification-container">
+        {showNotification && <Notification message={notificationMessage} />}
       </div>
-      
-      <div className="monaco-editor-container" style={{ margin: '20px 0 0 20px' }}>
-        <Editor
-          height="100%"
-          width="100%"
-          language={language}
-          defaultLanguage={language}
-          defaultValue="// Write your code here"
-          theme="vs-dark"
-          onMount={handleEditorDidMount}
-          keepCurrentModel={true}
-          overrideServices={{
-            editorCursorStyle: 'line-thin',
-            editorCursorBlinking: 'solid',
-            editorCursorSmoothCaretAnimation: true,
-          }}
-          options={{
-            fontSize: 14,
-            minimap: { enabled: false },
-            wordWrap: 'on',
-            scrollBeyondLastLine: false,
-            smoothScrolling: true,
-            cursorBlinking: 'smooth',
-            cursorSmoothCaretAnimation: 'on',
-            cursorStyle: 'line-thin',
-            cursorWidth: 1,
-            renderWhitespace: 'none',
-            renderLineHighlight: 'all',
-            lineNumbers: 'on',
-            lineNumbersMinChars: 3,
-            renderValidationDecorations: 'on',
-            fixedOverflowWidgets: true,
-            autoIndent: 'advanced',
-            useTabStops: true,
-            highlightActiveIndentGuide: true,
-            renderIndentGuides: true,
-            scrollbar: {
-              useShadows: false,
-              verticalHasArrows: false,
-              horizontalHasArrows: false,
-              vertical: 'visible',
-              horizontal: 'visible',
-              verticalScrollbarSize: 12,
-              horizontalScrollbarSize: 12,
-            },
-            padding: {
-              top: 20,
-              bottom: 10,
-            }
-          }}
-        />
+      <div className="code-editor-wrapper">
+        <div className="code-editor-header">
+          <label htmlFor="language">Language:</label>
+          <select
+            id="language"
+            className="code-editor-dropdown"
+            value={language}
+            onChange={(e) => handleLanguageChange(e.target.value)}
+          >
+            <option value="javascript">JavaScript</option>
+            <option value="python">Python</option>
+            <option value="java">Java</option>
+            <option value="cpp">C++</option>
+          </select>
+        </div>
+
+        <div className="monaco-editor-container" style={{ margin: '20px 0 0 20px' }}>
+          <Editor
+            height="100%"
+            width="100%"
+            language={language}
+            defaultLanguage={language}
+            defaultValue="// Write your code here"
+            theme="vs-dark"
+            onMount={handleEditorDidMount}
+            keepCurrentModel={true}
+            overrideServices={{
+              editorCursorStyle: 'line-thin',
+              editorCursorBlinking: 'solid',
+              editorCursorSmoothCaretAnimation: true,
+            }}
+            options={{
+              fontSize: 14,
+              minimap: { enabled: false },
+              wordWrap: 'on',
+              scrollBeyondLastLine: false,
+              smoothScrolling: true,
+              cursorBlinking: 'smooth',
+              cursorSmoothCaretAnimation: 'on',
+              cursorStyle: 'line-thin',
+              cursorWidth: 1,
+              renderWhitespace: 'none',
+              renderLineHighlight: 'all',
+              lineNumbers: 'on',
+              lineNumbersMinChars: 3,
+              renderValidationDecorations: 'on',
+              fixedOverflowWidgets: true,
+              autoIndent: 'advanced',
+              useTabStops: true,
+              highlightActiveIndentGuide: true,
+              renderIndentGuides: true,
+              scrollbar: {
+                useShadows: false,
+                verticalHasArrows: false,
+                horizontalHasArrows: false,
+                vertical: 'visible',
+                horizontal: 'visible',
+                verticalScrollbarSize: 12,
+                horizontalScrollbarSize: 12,
+              },
+              padding: {
+                top: 20,
+                bottom: 10,
+              }
+            }}
+          />
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

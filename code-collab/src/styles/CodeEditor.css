@@ -34,11 +34,6 @@
   transition: background-color 0.3s ease;
 }
 
-.code-editor-dropdown:hover,
-.code-editor-dropdown:focus {
-  background-color: #4d4d6f;
-  cursor: pointer;
-}
 
 
 .monaco-editor-container {

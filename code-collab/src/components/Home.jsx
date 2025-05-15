@@ -8,23 +8,23 @@ import '../styles/Home.css';
 const Home = () => {
     const [roomId, setRoomId] = useState('')
     const [username, setUsername] = useState('')
-    const [showNotification, setShowNotification] = useState(false)
-    const notificationTimeoutRef = useRef(null);
-    const [message, setMessage] = useState('')
     const navigate = useNavigate()
-
-    const showNotificationWithTimeout = (msg) => {
-        setMessage(msg);
-        setShowNotification(true);
-    
-        if (notificationTimeoutRef.current) {
-            clearTimeout(notificationTimeoutRef.current);
-        }
-    
-        notificationTimeoutRef.current = setTimeout(() => {
-            setShowNotification(false);
-            notificationTimeoutRef.current = null; 
-        }, 1500);
+    const[showNotification, setShowNotification] = useState(false);
+    const[notificationMessage, setNotificationMessage] = useState('');
+    const timeOutRef = useRef(null);
+    const notificationDuration = 3000;
+  
+    //Notification
+    const showNotificationWithTimeout = (message) => {
+      if (timeOutRef.current) {
+        clearTimeout(timeOutRef.current);
+      }
+      setNotificationMessage(message);
+      setShowNotification(true);
+      timeOutRef.current = setTimeout(() => {
+        setShowNotification(false);
+        timeOutRef.current = null;
+      }, notificationDuration);
     };
 
     const visitRoom = () => {
@@ -62,7 +62,7 @@ const Home = () => {
 
     return (
         <div className="home-container">
-            {showNotification && <Notification message={message}/>}
+            {showNotification && <Notification message={notificationMessage}/>}
             
             <div className="home-header">
                 <h1>Welcome to Code Collab</h1>
