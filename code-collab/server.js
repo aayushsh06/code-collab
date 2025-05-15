@@ -171,6 +171,12 @@ io.on('connection', (socket) => {
         });
     });
     
+    socket.on(ACTIONS.LANGUAGE_CHANGE, ({ roomId, language, username }) => {
+        socket.to(roomId).emit(ACTIONS.LANGUAGE_CHANGE, {
+            language,
+            username
+        });
+    });
 
     socket.on(ACTIONS.DISCONNECTED, ({ socketId, username, roomId }) => {
         if (roomId) {

@@ -24,6 +24,7 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
   const cursorDecorations = useRef({});
   const selectionDecorations = useRef({});
   const userColor = useRef(getRandomColor());
+  const isLanguageChangingRef = useRef(false);
 
   const location = useLocation();
   
@@ -152,6 +153,23 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
         }
       `;
       document.head.appendChild(style);
+    }
+  };
+
+  const handleLanguageChange = (newLanguage) => {
+    if (isLanguageChangingRef.current) {
+      isLanguageChangingRef.current = false;
+      return;
+    }
+    
+    setLanguage(newLanguage);
+    
+    if (socketRef.current) {
+      socketRef.current.emit(ACTIONS.LANGUAGE_CHANGE, {
+        roomId,
+        language: newLanguage,
+        username
+      });
     }
   };
 
@@ -352,7 +370,7 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
             }
           };
           
-          const styleId = `user-cursor-style-${remoteUsername}`;
+          const styleId = `cursor-style-${remoteUsername}`;
           let styleEl = document.getElementById(styleId);
           
           if (styleEl) {
@@ -387,7 +405,7 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
             }
           `;
           
-          document.head.appendChild(styleEl);
+          document.head.appendChild(styleEl); 
 
           cursorDecorations.current[remoteUsername] = editorRef.current.deltaDecorations(
             cursorDecorations.current[remoteUsername] || [],
@@ -456,7 +474,7 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
             border-radius: 4px;
             font-size: 12px;
             z-index: 10;
-            animation: user-selection-blink-${remoteUsername} 2s infinite;
+            animation: user-selection-blink-${remoteUsername} 3s infinite;
           }
           
           @keyframes user-selection-blink-${remoteUsername} {
@@ -515,11 +533,19 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
     
     const saveInterval = setInterval(forceSaveCurrentCode, 5000);
 
+    const handleLanguageUpdate = ({ language: newLanguage, username: remoteUsername }) => {
+      if (remoteUsername !== username) {
+        isLanguageChangingRef.current = true;
+        setLanguage(newLanguage);
+      }
+    };
+
     socketRef.current.on(ACTIONS.CODE_CHANGE, handleCodeChange);
     socketRef.current.on(ACTIONS.CURSOR_CHANGE, handleCursorChange);
     socketRef.current.on(ACTIONS.SELECTION_CHANGE, handleSelectionChange);
     socketRef.current.on(ACTIONS.REQUEST_CURRENT_CODE, handleRequestCurrentCode);
     socketRef.current.on(ACTIONS.CURSOR_LEAVE, handleCursorLeave);
+    socketRef.current.on(ACTIONS.LANGUAGE_CHANGE, handleLanguageUpdate);
 
     return () => {
       clearInterval(saveInterval);
@@ -548,6 +574,7 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
         socketRef.current.off(ACTIONS.REQUEST_CURRENT_CODE);
         socketRef.current.off(ACTIONS.CURSOR_LEAVE);
         socketRef.current.off(ACTIONS.DISCONNECTED);
+        socketRef.current.off(ACTIONS.LANGUAGE_CHANGE);
       }
     };
   }, [socketRef.current, roomId, username]);
@@ -560,7 +587,7 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
           id="language"
           className="code-editor-dropdown"
           value={language}
-          onChange={(e) => setLanguage(e.target.value)}
+          onChange={(e) => handleLanguageChange(e.target.value)}
         >
           <option value="javascript">JavaScript</option>
           <option value="python">Python</option>
@@ -593,7 +620,7 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
             cursorBlinking: 'smooth',
             cursorSmoothCaretAnimation: 'on',
             cursorStyle: 'line-thin',
-            cursorWidth: 2,
+            cursorWidth: 1,
             renderWhitespace: 'none',
             renderLineHighlight: 'all',
             lineNumbers: 'on',

@@ -11,4 +11,5 @@ export const ACTIONS = {
     CURSOR_LEAVE: 'cursor-leave',
     REQUEST_CURRENT_CODE: 'request-current-code',
     SEND_CURRENT_CODE: 'send-current-code',
+    LANGUAGE_CHANGE: 'language-change',
 };
