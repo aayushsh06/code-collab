@@ -378,8 +378,9 @@ const handleCursorChange = ({ position, username: remoteUsername, color }) => {
       }
 
       const isEndOfLine = validatedPosition.column === maxColumn;
+
       
-      const cursorRange = isEndOfLine
+      const cursorRange = (isEndOfLine)
         ? new monacoRef.current.Range(
             validatedPosition.lineNumber,
             validatedPosition.column - 1,
@@ -409,7 +410,7 @@ const handleCursorChange = ({ position, username: remoteUsername, color }) => {
         styleEl.remove();
       }
 
-      const transformValue = isEndOfLine ? 'translateX(8px)' : 'translateX(0px)';
+      const transformValue = (isEndOfLine && validatedPosition.column > 1) ? 'translateX(8px)' : 'translateX(0px)';
       
       styleEl = document.createElement('style');
       styleEl.id = styleId;
@@ -448,7 +449,6 @@ const handleCursorChange = ({ position, username: remoteUsername, color }) => {
 
       document.head.appendChild(styleEl);
 
-      // Apply decorations to the editor
       cursorDecorations.current[remoteUsername] = editorRef.current.deltaDecorations(
         cursorDecorations.current[remoteUsername] || [],
         [cursorDecoration]
@@ -639,7 +639,6 @@ const handleCursorChange = ({ position, username: remoteUsername, color }) => {
             width="100%"
             language={language}
             defaultLanguage={language}
-            defaultValue="// Write your code here"
             theme="vs-dark"
             onMount={handleEditorDidMount}
             keepCurrentModel={true}

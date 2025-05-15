@@ -233,7 +233,7 @@ process.on('SIGINT', async () => {
 async function getCodeFromRedis(roomId) {
     if (!redisConnected) {
         console.log('Redis not connected, returning default code');
-        return { code: '// Write your code here', version: 0 };
+        return { code: '// Write Code Here', version: 0 };
     }
     
     try {
@@ -241,11 +241,15 @@ async function getCodeFromRedis(roomId) {
         const version = await redisClient.get(`room:${roomId}:version`) || '0';
         
         roomVersions[roomId] = parseInt(version, 10);
-        
-        return { code: code || '// Write your code here', version: parseInt(version, 10) };
+
+        if(getAllUsers(roomId).length === 0) {
+            return { code: '// Write Code Here', version: 0 };
+        }
+
+        return { code: code || '', version: parseInt(version, 10) };
     } catch (error) {
         console.log('Error getting code from Redis:', error);
-        return { code: '// Write your code here', version: 0 };
+        return { code: '// Write Code Here', version: 0 };
     }
 }
 
