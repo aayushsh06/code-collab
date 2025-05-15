@@ -4,14 +4,15 @@ import CodeEditor from './CodeEditor';
 import { initSocket } from '../socket.js';
 import { ACTIONS } from '../Actions.js';
 import Notification from './Notification.jsx';
-
+import BlinkingDot from './visualElements/BlinkingDot.jsx';
+import { useBlink } from './visualElements/useBlink.js';
 import '../styles/Editor.css';
 
 const Editor = () => {
 
   const [showNotification, setShowNotification] = useState(false);
   const notificationTimeoutRef = useRef(null);
-  const[notificationMessage, setNotificationMessage] = useState('');
+  const [notificationMessage, setNotificationMessage] = useState('');
   const timeOutRef = useRef(null);
   const notificationDuration = 3000;
 
@@ -38,7 +39,7 @@ const Editor = () => {
 
   const handleLeaveRoom = () => {
     showNotificationWithTimeout("Leaving room...");
-    
+
 
     if (socketRef.current) {
       try {
@@ -46,16 +47,16 @@ const Editor = () => {
           roomId,
           username: location.state?.username || 'Anonymous'
         });
-        
+
         socketRef.current.emit(ACTIONS.DISCONNECTED, {
           socketId: socketRef.current.id,
           username: location.state?.username || 'Anonymous',
           roomId
         });
-        
+
         setTimeout(() => {
           socketRef.current.disconnect();
-          
+
           navigate('/');
         }, 300);
       } catch (error) {
@@ -91,7 +92,7 @@ const Editor = () => {
 
       socketRef.current.on('connect_error', (err) => handleErrors(err));
       socketRef.current.on('connect_failed', (err) => handleErrors(err));
-      
+
       socketRef.current.on('connect', () => {
         setIsConnected(true);
         requestCodeFromServer();
@@ -116,12 +117,12 @@ const Editor = () => {
           showNotificationWithTimeout(`${username} Joined`);
         }
         setUsers(users);
-        
+
         setTimeout(() => {
           requestCodeFromServer();
-        }, 500); 
+        }, 500);
       });
-      
+
       socketRef.current.on(ACTIONS.DISCONNECTED, ({ socketId, username }) => {
         showNotificationWithTimeout(`${username} Left`);
         setUsers((prev) => {
@@ -131,15 +132,15 @@ const Editor = () => {
     };
 
     init();
-    
+
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && socketRef.current) {
         requestCodeFromServer();
       }
     };
-    
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    
+
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (socketRef.current) {
@@ -157,6 +158,9 @@ const Editor = () => {
     };
   }, [isConnected]);
 
+  const blink = useBlink();
+
+
   return (
     <div className="editor">
       {showNotification && <Notification message={notificationMessage} />}
@@ -164,7 +168,10 @@ const Editor = () => {
         <div className="users">
           <h1>Active Users</h1>
           {users.map(client => (
-            <h2 key={client.socketId}>{client.username}</h2>
+            <h2 key={client.socketId}>
+              <BlinkingDot visible={blink} />
+              {client.username}
+            </h2>
           ))}
         </div>
         <div className="actions">
