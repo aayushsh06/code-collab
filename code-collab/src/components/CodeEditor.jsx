@@ -17,7 +17,13 @@ const getRandomColor = () => {
 };
 
 const CodeEditor = ({ socketRef, roomId, editorRef }) => {
-  const [language, setLanguage] = useState('javascript');
+  const [language, setLanguage] = useState(() => {
+    try {
+      return localStorage.getItem('preferred_language') || 'javascript';
+    } catch (e) {
+      return 'javascript';
+    }
+  });
   const [codeVersion, setCodeVersion] = useState(0);
 
   const monacoRef = useRef(null);
@@ -180,9 +186,16 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
       isLanguageChangingRef.current = false;
       return;
     }
-
+    
     setLanguage(newLanguage);
-
+    
+    // Save to localStorage
+    try {
+      localStorage.setItem('preferred_language', newLanguage);
+    } catch (e) {
+      console.warn('Failed to save language preference to localStorage:', e);
+    }
+    
     if (socketRef.current) {
       socketRef.current.emit(ACTIONS.LANGUAGE_CHANGE, {
         roomId,
@@ -190,7 +203,6 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
         username
       });
     }
-
   };
 
   useEffect(() => {
@@ -384,13 +396,10 @@ const handleCursorChange = ({ position, username: remoteUsername, color }) => {
       const cursorDecoration = {
         range: cursorRange,
         options: {
-          className: 'cursor-container',
-          hoverMessage: { value: remoteUsername },
-          before: {
-            content: ' ',
-            inlineClassName: `user-cursor-${remoteUsername}`,
-          }
+          className: `user-cursor-${remoteUsername}`,
+          hoverMessage: { value: remoteUsername }
         }
+        
       };
 
       const styleId = `cursor-style-${remoteUsername}`;
@@ -493,29 +502,10 @@ const handleCursorChange = ({ position, username: remoteUsername, color }) => {
         styleEl.innerHTML = `
           .user-selection-${remoteUsername} {
             background-color: ${color}70;
-            outline: 1px solid ${color};
+
             position: relative;
           }
           
-          .user-selection-${remoteUsername}::before {
-            content: "${remoteUsername}";
-            position: absolute;
-            top: -20px;
-            left: 100%;
-            background-color: ${color};
-            color: white;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 12px;
-            z-index: 10;
-            animation: user-selection-blink-${remoteUsername} 3s infinite;
-          }
-          
-          @keyframes user-selection-blink-${remoteUsername} {
-            0% { opacity: 0.7; }
-            50% { opacity: 0.0; }
-            100% { opacity: 0.7; }
-          }
         `;
 
 
