@@ -501,8 +501,8 @@ const handleCursorChange = ({ position, username: remoteUsername, color }) => {
         styleEl.id = styleId;
         styleEl.innerHTML = `
           .user-selection-${remoteUsername} {
-            background-color: ${color}70;
-
+            background-color: ${color}70; 
+            border-color: ${color}70;
             position: relative;
           }
           

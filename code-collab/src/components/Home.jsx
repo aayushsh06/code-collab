@@ -66,7 +66,7 @@ const Home = () => {
             
             <div className="home-header">
                 <h1>Welcome to Code Collab</h1>
-                <p className="subtitle">Real-time collaborative code editor</p>
+                <p className="subtitle">A real-time collaborative code editor</p>
             </div>
             
             <div className="portal-container">

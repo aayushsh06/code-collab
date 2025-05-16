@@ -10,7 +10,8 @@ const BlinkingDot = ({ visible }) => (
       opacity: visible ? 1 : 0,
       transition: 'opacity 0.1s linear',
     }}
-  />
+  >
+  </span>
 );
 
 export default BlinkingDot;
