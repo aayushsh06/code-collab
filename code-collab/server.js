@@ -91,16 +91,26 @@ io.on('connection', (socket) => {
 
     // JOINING LOGIC
     socket.on(ACTIONS.JOIN, async ({ roomId, username }) => {
+        console.log('User joining room:', username, 'Room ID:', roomId);
         userSocketMap[socket.id] = username;
         socket.join(roomId);
     
         const users = getAllUsers(roomId);
     
-        console.log(users);
+        console.log('Users in room:', users);
     
         const savedCode = await getCodeFromRedis(roomId);
         
         socket.emit(ACTIONS.SYNC_CODE_RESPONSE, { code: savedCode });
+        
+        // Get room language
+        const roomLanguage = await getLanguageFromRedis(roomId);
+        if (roomLanguage) {
+            console.log('Sending initial room language to new user:', roomLanguage);
+            socket.emit(ACTIONS.ROOM_LANGUAGE, {
+                language: roomLanguage
+            });
+        }
     
         users.forEach(({ socketId }) => {
             io.to(socketId).emit(ACTIONS.JOINED, {
@@ -171,11 +181,34 @@ io.on('connection', (socket) => {
         });
     });
     
-    socket.on(ACTIONS.LANGUAGE_CHANGE, ({ roomId, language, username }) => {
+    socket.on(ACTIONS.LANGUAGE_CHANGE, async ({ roomId, language, username }) => {
         socket.to(roomId).emit(ACTIONS.LANGUAGE_CHANGE, {
             language,
             username
         });
+        if(redisConnected) {
+            try {
+                await redisClient.set(`room:${roomId}:language`, language);
+                await redisClient.expire(`room:${roomId}:language`, 86400);
+            } catch (error) {
+                console.log('Error saving language to Redis:', error);
+            }
+        }
+    });
+
+    socket.on(ACTIONS.REQUEST_LANGUAGE, async ({ roomId }) => {
+        if (roomId) {
+            const roomLanguage = await getLanguageFromRedis(roomId);
+            if (roomLanguage) {
+                socket.emit(ACTIONS.ROOM_LANGUAGE, {
+                    language: roomLanguage
+                });
+            } else {
+                console.log('No language found for room:', roomId);
+            }
+        } else {
+            console.log('Cannot get language - Room ID missing');
+        }
     });
 
     socket.on(ACTIONS.DISCONNECTED, ({ socketId, username, roomId }) => {
@@ -282,3 +315,20 @@ async function saveCodeToRedis(roomId, code) {
         return false;
     }
 }
+
+async function getLanguageFromRedis(roomId) {
+    if (!redisConnected) {
+        console.log('Redis not connected, cannot get language');
+        return null;
+    }
+    
+    try {
+        const language = await redisClient.get(`room:${roomId}:language`);
+        console.log(`Retrieved language for room ${roomId}:`, language);
+        return language;
+    } catch (error) {
+        console.log('Error getting language from Redis:', error);
+        return null;
+    }
+}
+

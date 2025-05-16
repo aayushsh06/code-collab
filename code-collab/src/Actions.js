@@ -12,4 +12,6 @@ export const ACTIONS = {
     REQUEST_CURRENT_CODE: 'request-current-code',
     SEND_CURRENT_CODE: 'send-current-code',
     LANGUAGE_CHANGE: 'language-change',
+    REQUEST_LANGUAGE: 'request-language',
+    ROOM_LANGUAGE: 'room-language',
 };

@@ -32,6 +32,7 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
   const selectionDecorations = useRef({});
   const userColor = useRef(getRandomColor());
   const isLanguageChangingRef = useRef(false);
+  const initialRoomJoinRef = useRef(true);
 
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
@@ -81,7 +82,7 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
     monacoRef.current = monaco;
 
     clearAllDecorations();
-
+    
     const cancelTokenSource = new monaco.CancellationTokenSource();
     editorRef.current._cancelTokenSource = cancelTokenSource;
 
@@ -92,16 +93,18 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
         editorContainer.style.padding = '0';
       }
     }
-
+    
     setTimeout(() => {
       editor.layout();
-
+      
       editor.setPosition({ lineNumber: 1, column: 1 });
       editor.focus();
     }, 100);
 
     if (socketRef.current) {
       socketRef.current.emit(ACTIONS.REQUEST_CODE, { roomId, clientVersion: codeVersion });
+      
+      // We don't need to request language here anymore since we do it in useEffect
     }
 
     editor.onDidBlurEditorWidget(() => {
@@ -189,7 +192,6 @@ const CodeEditor = ({ socketRef, roomId, editorRef }) => {
     
     setLanguage(newLanguage);
     
-    // Save to localStorage
     try {
       localStorage.setItem('preferred_language', newLanguage);
     } catch (e) {
@@ -569,8 +571,27 @@ const handleCursorChange = ({ position, username: remoteUsername, color }) => {
       if (remoteUsername !== username) {
         isLanguageChangingRef.current = true;
         setLanguage(newLanguage);
+        
+        try {
+          localStorage.setItem('preferred_language', newLanguage);
+        } catch (e) {
+          console.warn('Failed to save language preference to localStorage:', e);
+        }
       }
       showNotificationWithTimeout(`${remoteUsername} changed language to ${languageMap[newLanguage]}`);
+    };
+
+    const handleRoomLanguage = ({ language: roomLanguage }) => {
+      if (roomLanguage) {
+        isLanguageChangingRef.current = true;
+        setLanguage(roomLanguage);
+        
+        try {
+          localStorage.setItem('preferred_language', roomLanguage);
+        } catch (e) {
+          console.warn('Failed to save language preference to localStorage:', e);
+        }
+      }
     };
 
     socketRef.current.on(ACTIONS.CODE_CHANGE, handleCodeChange);
@@ -579,6 +600,7 @@ const handleCursorChange = ({ position, username: remoteUsername, color }) => {
     socketRef.current.on(ACTIONS.REQUEST_CURRENT_CODE, handleRequestCurrentCode);
     socketRef.current.on(ACTIONS.CURSOR_LEAVE, handleCursorLeave);
     socketRef.current.on(ACTIONS.LANGUAGE_CHANGE, handleLanguageUpdate);
+    socketRef.current.on(ACTIONS.ROOM_LANGUAGE, handleRoomLanguage);
 
     return () => {
       clearInterval(saveInterval);
@@ -608,9 +630,17 @@ const handleCursorChange = ({ position, username: remoteUsername, color }) => {
         socketRef.current.off(ACTIONS.CURSOR_LEAVE);
         socketRef.current.off(ACTIONS.DISCONNECTED);
         socketRef.current.off(ACTIONS.LANGUAGE_CHANGE);
+        socketRef.current.off(ACTIONS.ROOM_LANGUAGE);
       }
     };
   }, [socketRef.current, roomId, username]);
+
+  useEffect(() => {
+    if (socketRef.current && initialRoomJoinRef.current) {
+      socketRef.current.emit(ACTIONS.REQUEST_LANGUAGE, { roomId });
+      initialRoomJoinRef.current = false;
+    }
+  }, [socketRef.current, roomId]);
 
   return (
     <>
