@@ -14,8 +14,8 @@ A full-stack, real-time collaborative coding platform that enables seamless code
 - **Cursor and Selection Tracking**  
   See other users’ cursors and code selections in real time, improving communication and awareness in collaborative sessions.
 
-- **Language Preference Management**  
-  Remembers your preferred programming language using **localStorage** (client-side) and **Redis** (server-side), preserving settings across sessions.
+- **Code Persistence**  
+  Remembers your code abd preferred programming language using **Redis**, preserving code and settings across sessions.
 
 - **Robust Backend**  
   Efficient state management with **Redis**, supporting code and language versioning to prevent data loss and ensure consistency.
